@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.zik"
+    namespace = "com.zik.music"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.example.zik"
-        minSdk = 24
+        applicationId = "com.zik.music"
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -81,4 +81,19 @@ dependencies {
   implementation(libs.androidx.navigation3.ui)
   implementation(libs.androidx.navigation3.runtime)
   implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
+  // Media3 & Audio Engine
+  implementation(libs.androidx.media3.exoplayer)
+  implementation(libs.androidx.media3.session)
+  implementation(libs.androidx.media3.ui)
+
+  // Local Image Loading & Palette
+  implementation(libs.coil.compose)
+  implementation(libs.androidx.palette)
+
+  // Preferences & Datastore
+  implementation(libs.androidx.datastore.preferences)
+
+  // Icons
+  implementation(libs.androidx.compose.material.icons.extended)
 }
