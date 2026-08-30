@@ -5,7 +5,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -106,11 +108,11 @@ fun ExpandedPlayer(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(radius = 2.dp)
+                    .blur(radius = 3.dp)
             )
         }
 
-        // Dark Gradient Overlay for optimal contrast & legibility
+        // Dark Ambient Gradient Overlay for Glassmorphic Depth
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -118,7 +120,7 @@ fun ExpandedPlayer(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Black.copy(alpha = 0.35f),
-                            Color.Black.copy(alpha = 0.45f),
+                            Color.Black.copy(alpha = 0.50f),
                             Color.Black.copy(alpha = 0.85f),
                             Color.Black.copy(alpha = 0.96f)
                         )
@@ -185,30 +187,28 @@ fun ExpandedPlayer(
                 }
             }
 
-            // Middle Area: 3D Flippable Album Art & Synced Lyrics (Tap to flip, Swipe left/right to skip)
+            // Middle Area: 3D Flippable Album Art & Synced Lyrics
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .padding(vertical = 12.dp)
                     .pointerInput(song.id) {
-                        var totalDrag = 0f
+                        var dragDistanceX = 0f
                         detectHorizontalDragGestures(
-                            onDragStart = { totalDrag = 0f },
+                            onDragStart = { dragDistanceX = 0f },
                             onDragEnd = {
-                                if (totalDrag < -100f) {
+                                if (dragDistanceX < -100f) {
                                     onSkipNext()
-                                } else if (totalDrag > 100f) {
+                                } else if (dragDistanceX > 100f) {
                                     onSkipPrevious()
-                                } else if (abs(totalDrag) < 18f) {
-                                    // Tap in middle area triggers 3D flip between cover and lyrics
-                                    showLyrics = !showLyrics
                                 }
-                                totalDrag = 0f
+                                dragDistanceX = 0f
                             },
-                            onDragCancel = { totalDrag = 0f },
+                            onDragCancel = { dragDistanceX = 0f },
                             onHorizontalDrag = { change, dragAmount ->
                                 change.consume()
-                                totalDrag += dragAmount
+                                dragDistanceX += dragAmount
                             }
                         )
                     },
@@ -217,6 +217,12 @@ fun ExpandedPlayer(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            showLyrics = !showLyrics
+                        }
                         .graphicsLayer {
                             rotationY = flipRotation
                             cameraDistance = 14f * density
@@ -225,36 +231,37 @@ fun ExpandedPlayer(
                 ) {
                     if (flipRotation <= 90f) {
                         // Front Side: Album Art Card
-                        if (song.albumArtUri != null) {
-                            AsyncImage(
-                                model = song.albumArtUri,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxWidth(0.88f)
-                                    .aspectRatio(1f)
-                                    .clip(RoundedCornerShape(22.dp))
-                                    .background(Color.White.copy(alpha = 0.1f))
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(0.88f)
-                                    .aspectRatio(1f)
-                                    .clip(RoundedCornerShape(22.dp))
-                                    .background(Color.White.copy(alpha = 0.1f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MusicNote,
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color.White.copy(alpha = 0.10f),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.20f)),
+                            modifier = Modifier
+                                .fillMaxWidth(0.88f)
+                                .aspectRatio(1f)
+                        ) {
+                            if (song.albumArtUri != null) {
+                                AsyncImage(
+                                    model = song.albumArtUri,
                                     contentDescription = null,
-                                    tint = Color.White.copy(alpha = 0.4f),
-                                    modifier = Modifier.size(72.dp)
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
                                 )
+                            } else {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MusicNote,
+                                        contentDescription = null,
+                                        tint = Color.White.copy(alpha = 0.4f),
+                                        modifier = Modifier.size(72.dp)
+                                    )
+                                }
                             }
                         }
                     } else {
-                        // Back Side: Apple Music-style Kinetic Synced Lyrics View (Mirrored 180 so text is upright)
+                        // Back Side: Synced Lyrics View
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -263,7 +270,8 @@ fun ExpandedPlayer(
                             LyricsView(
                                 lyrics = lyrics,
                                 currentPositionMs = playerState.currentPositionMs,
-                                onSeekTo = onSeekTo
+                                onSeekTo = onSeekTo,
+                                onTap = { showLyrics = false }
                             )
                         }
                     }

@@ -1,5 +1,6 @@
 package com.zik.music.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -19,23 +20,23 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.zik.music.model.Song
 import com.zik.music.ui.theme.AccentMutedBlue
 import com.zik.music.ui.theme.PureBlack
-import com.zik.music.ui.theme.SurfaceLevel1
-import com.zik.music.ui.theme.SurfaceLevel2
 import com.zik.music.ui.theme.TextDisabled
-import com.zik.music.ui.theme.TextPrimary
-import com.zik.music.ui.theme.TextSecondary
 import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -50,90 +51,105 @@ fun SongItem(
     isSelectionMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor = when {
-        isSelected -> SurfaceLevel2
-        else -> PureBlack
+    val cardColor = when {
+        isSelected -> AccentMutedBlue.copy(alpha = 0.22f)
+        isCurrent -> Color.White.copy(alpha = 0.16f)
+        else -> Color.White.copy(alpha = 0.08f)
     }
 
-    Row(
+    val borderColor = when {
+        isSelected -> AccentMutedBlue.copy(alpha = 0.6f)
+        isCurrent -> AccentMutedBlue.copy(alpha = 0.45f)
+        else -> Color.White.copy(alpha = 0.14f)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = cardColor,
+        border = BorderStroke(1.dp, borderColor),
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .background(backgroundColor)
+            .padding(horizontal = 14.dp, vertical = 4.dp)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
             )
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Selection Checkbox or Album Art
-        if (isSelectionMode) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Selection Checkbox or Album Art
+            if (isSelectionMode) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) AccentMutedBlue else Color.White.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Selected",
+                            tint = PureBlack,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+
+            // Frosted Thumbnail Artwork (46x46dp, 10dp radius)
             Box(
                 modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(if (isSelected) AccentMutedBlue else SurfaceLevel2),
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.White.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                if (isSelected) {
+                if (song.albumArtUri != null) {
+                    AsyncImage(
+                        model = song.albumArtUri,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(46.dp)
+                    )
+                } else {
                     Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Selected",
-                        tint = PureBlack,
-                        modifier = Modifier.size(16.dp)
+                        imageVector = Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
-            Spacer(modifier = Modifier.width(12.dp))
-        }
 
-        // Album art thumbnail: 48x48dp, 4dp radius (UI.md)
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(SurfaceLevel2),
-            contentAlignment = Alignment.Center
-        ) {
-            if (song.albumArtUri != null) {
-                AsyncImage(
-                    model = song.albumArtUri,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(48.dp)
+            Spacer(modifier = Modifier.width(14.dp))
+
+            // Title and Artist
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = song.title,
+                    fontSize = 15.sp,
+                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isCurrent) AccentMutedBlue else Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
-                    tint = TextDisabled,
-                    modifier = Modifier.size(24.dp)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${song.artist} • ${formatDuration(song.durationMs)}",
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.65f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // Title and Artist
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = song.title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (isCurrent) AccentMutedBlue else TextPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "${song.artist} • ${formatDuration(song.durationMs)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }
