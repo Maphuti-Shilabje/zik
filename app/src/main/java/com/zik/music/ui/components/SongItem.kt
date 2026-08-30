@@ -28,7 +28,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -69,16 +68,17 @@ fun SongItem(
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
+    // Pure crystal-clear glassmorphism: zero muddy grey fill, letting the ambient backdrop glow through
     val cardColor = when {
         isSelected -> AccentMutedBlue.copy(alpha = 0.22f)
-        isCurrent -> Color.White.copy(alpha = 0.16f)
-        else -> Color.White.copy(alpha = 0.08f)
+        isCurrent -> AccentMutedBlue.copy(alpha = 0.12f)
+        else -> Color.White.copy(alpha = 0.04f)
     }
 
     val borderColor = when {
-        isSelected -> AccentMutedBlue.copy(alpha = 0.6f)
+        isSelected -> AccentMutedBlue.copy(alpha = 0.70f)
         isCurrent -> AccentMutedBlue.copy(alpha = 0.45f)
-        else -> Color.White.copy(alpha = 0.14f)
+        else -> Color.White.copy(alpha = 0.10f)
     }
 
     Surface(
@@ -87,7 +87,7 @@ fun SongItem(
         border = BorderStroke(1.dp, borderColor),
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 4.dp)
+            .padding(horizontal = 14.dp, vertical = 3.5.dp)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
@@ -125,7 +125,7 @@ fun SongItem(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color.White.copy(alpha = 0.1f)),
+                    .background(Color.White.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
                 if (song.albumArtUri != null) {

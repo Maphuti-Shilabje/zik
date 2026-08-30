@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,11 +38,11 @@ fun FolderItem(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White.copy(alpha = 0.08f),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+        color = Color.White.copy(alpha = 0.04f),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 4.dp)
+            .padding(horizontal = 14.dp, vertical = 3.5.dp)
             .clickable(onClick = onClick)
     ) {
         Row(
@@ -56,7 +55,7 @@ fun FolderItem(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(AccentMutedBlue.copy(alpha = 0.18f)),
+                    .background(AccentMutedBlue.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

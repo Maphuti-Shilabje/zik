@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +51,9 @@ fun ReorderableTabRow(
 ) {
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffsetX by remember { mutableFloatStateOf(0f) }
+
+    val currentOnReorderTabs by rememberUpdatedState(onReorderTabs)
+    val currentOnTabSelected by rememberUpdatedState(onTabSelected)
 
     val density = LocalDensity.current
     val spacingDp = 6.dp
@@ -81,7 +85,7 @@ fun ReorderableTabRow(
                 val isSelected = activeTab == tab
                 val isDraggingThis = currentDragIdx == index
 
-                // Real-time displacement for neighbor tabs as finger moves
+                // Real-time animated displacement for non-dragged neighbor tabs
                 val targetDisplacementPx = when {
                     isDraggingThis -> 0f
                     currentDragIdx != null && targetSlot != null -> {
@@ -106,12 +110,12 @@ fun ReorderableTabRow(
 
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = if (isSelected) AccentMutedBlue else Color.White.copy(alpha = 0.09f),
+                    color = if (isSelected) AccentMutedBlue else Color.White.copy(alpha = 0.05f),
                     border = BorderStroke(
                         1.dp,
-                        if (isDraggingThis) AccentMutedBlue.copy(alpha = 0.85f)
+                        if (isDraggingThis) AccentMutedBlue.copy(alpha = 0.9f)
                         else if (isSelected) AccentMutedBlue
-                        else Color.White.copy(alpha = 0.16f)
+                        else Color.White.copy(alpha = 0.14f)
                     ),
                     modifier = Modifier
                         .width(tabWidthDp)
@@ -125,19 +129,20 @@ fun ReorderableTabRow(
                         .clip(RoundedCornerShape(18.dp))
                         .clickable {
                             if (draggingIndex == null) {
-                                onTabSelected(tab)
+                                currentOnTabSelected(tab)
                             }
                         }
-                        .pointerInput(index, tabs) {
+                        .pointerInput(tab) {
                             detectHorizontalDragGestures(
                                 onDragStart = {
                                     draggingIndex = index
                                     dragOffsetX = 0f
                                 },
                                 onDragEnd = {
-                                    val finalTarget = targetSlot ?: index
+                                    val shift = (dragOffsetX / slotStepPx).roundToInt()
+                                    val finalTarget = (index + shift).coerceIn(0, count - 1)
                                     if (finalTarget != index) {
-                                        onReorderTabs(index, finalTarget)
+                                        currentOnReorderTabs(index, finalTarget)
                                     }
                                     draggingIndex = null
                                     dragOffsetX = 0f
