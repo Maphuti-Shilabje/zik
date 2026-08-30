@@ -38,8 +38,7 @@ data class LibraryUiState(
         LibraryTab.FOLDERS,
         LibraryTab.FAVORITES,
         LibraryTab.SONGS,
-        LibraryTab.ALBUMS,
-        LibraryTab.ARTISTS
+        LibraryTab.ALBUMS
     ),
     val favoriteSongIds: Set<Long> = emptySet(),
     val searchQuery: String = "",

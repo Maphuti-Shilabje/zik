@@ -72,6 +72,7 @@ import com.zik.music.ui.LibraryTab
 import com.zik.music.ui.LibraryUiState
 import com.zik.music.ui.components.FastScroller
 import com.zik.music.ui.components.FolderItem
+import com.zik.music.ui.components.ReorderableTabRow
 import com.zik.music.ui.components.SongItem
 import com.zik.music.ui.theme.AccentMutedBlue
 import com.zik.music.ui.theme.PureBlack
@@ -101,9 +102,6 @@ fun LibraryScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val songsListState = rememberLazyListState()
-
-    var draggingTabIndex by remember { mutableStateOf<Int?>(null) }
-    var tabDragOffsetPx by remember { mutableFloatStateOf(0f) }
 
     Box(
         modifier = modifier
@@ -306,78 +304,13 @@ fun LibraryScreen(
                     }
                 }
             } else if (!uiState.isSelectionMode) {
-                // Highly Responsive 120fps GPU-Accelerated Drag-to-Reorder Tab Row
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    itemsIndexed(uiState.tabOrder, key = { _, tab -> tab.name }) { index, tab ->
-                        val isSelected = uiState.activeTab == tab
-                        val isCurrentDragging = draggingTabIndex == index
-
-                        Surface(
-                            shape = RoundedCornerShape(18.dp),
-                            color = if (isSelected) AccentMutedBlue else Color.White.copy(alpha = 0.08f),
-                            border = BorderStroke(
-                                1.dp,
-                                if (isCurrentDragging) AccentMutedBlue.copy(alpha = 0.8f) else if (isSelected) AccentMutedBlue else Color.White.copy(alpha = 0.15f)
-                            ),
-                            modifier = Modifier
-                                .zIndex(if (isCurrentDragging) 10f else 1f)
-                                .graphicsLayer {
-                                    translationX = if (isCurrentDragging) tabDragOffsetPx else 0f
-                                    scaleX = if (isCurrentDragging) 1.08f else 1.0f
-                                    scaleY = if (isCurrentDragging) 1.08f else 1.0f
-                                }
-                                .clip(RoundedCornerShape(18.dp))
-                                .clickable {
-                                    if (draggingTabIndex == null) {
-                                        onTabSelected(tab)
-                                    }
-                                }
-                                .pointerInput(tab) {
-                                    detectHorizontalDragGestures(
-                                        onDragStart = {
-                                            draggingTabIndex = index
-                                            tabDragOffsetPx = 0f
-                                        },
-                                        onDragEnd = {
-                                            val shiftSlots = (tabDragOffsetPx / 200f).roundToInt()
-                                            val targetIndex = (index + shiftSlots).coerceIn(0, uiState.tabOrder.size - 1)
-                                            if (targetIndex != index) {
-                                                onReorderTabs(index, targetIndex)
-                                            }
-                                            draggingTabIndex = null
-                                            tabDragOffsetPx = 0f
-                                        },
-                                        onDragCancel = {
-                                            draggingTabIndex = null
-                                            tabDragOffsetPx = 0f
-                                        },
-                                        onHorizontalDrag = { change, dragAmount ->
-                                            change.consume()
-                                            tabDragOffsetPx += dragAmount
-                                        }
-                                    )
-                                }
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = tab.title,
-                                    fontSize = 13.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) PureBlack else Color.White
-                                )
-                            }
-                        }
-                    }
-                }
+                // Interactive 4-Tab Reorderable Tab Row (Fits screen width with 16dp margins)
+                ReorderableTabRow(
+                    tabs = uiState.tabOrder,
+                    activeTab = uiState.activeTab,
+                    onTabSelected = onTabSelected,
+                    onReorderTabs = onReorderTabs
+                )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
