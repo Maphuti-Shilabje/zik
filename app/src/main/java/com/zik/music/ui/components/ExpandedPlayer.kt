@@ -1,17 +1,17 @@
 package com.zik.music.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -51,6 +50,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +63,7 @@ import com.zik.music.model.LyricLine
 import com.zik.music.playback.PlayerState
 import com.zik.music.ui.theme.AccentMutedBlue
 import com.zik.music.ui.theme.PureBlack
+import kotlin.math.abs
 
 @Composable
 fun ExpandedPlayer(
@@ -85,8 +86,12 @@ fun ExpandedPlayer(
         (playerState.currentPositionMs.toFloat() / playerState.durationMs.toFloat()).coerceIn(0f, 1f)
     } else 0f
 
-    // Total accumulated horizontal swipe offset to prevent accidental taps
-    var accumulatedDragX by remember(song.id) { mutableFloatStateOf(0f) }
+    // 3D Card Flip Animation (0 to 180 degrees)
+    val flipRotation by animateFloatAsState(
+        targetValue = if (showLyrics) 180f else 0f,
+        animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+        label = "cardFlip"
+    )
 
     Box(
         modifier = modifier
@@ -156,7 +161,7 @@ fun ExpandedPlayer(
                 }
 
                 Text(
-                    text = "Now Playing",
+                    text = if (showLyrics) "Lyrics" else "Now Playing",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.White
@@ -180,42 +185,88 @@ fun ExpandedPlayer(
                 }
             }
 
-            // Middle Area: Horizontal Swipe Gesture Zone (Taps DO NOT change song, only deliberate swipes)
+            // Middle Area: 3D Flippable Album Art & Synced Lyrics (Tap to flip, Swipe left/right to skip)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .pointerInput(song.id) {
+                        var totalDrag = 0f
                         detectHorizontalDragGestures(
-                            onDragStart = {
-                                accumulatedDragX = 0f
-                            },
+                            onDragStart = { totalDrag = 0f },
                             onDragEnd = {
-                                // Strictly require a distinct 100px swipe gesture
-                                if (accumulatedDragX < -100f) {
+                                if (totalDrag < -100f) {
                                     onSkipNext()
-                                } else if (accumulatedDragX > 100f) {
+                                } else if (totalDrag > 100f) {
                                     onSkipPrevious()
+                                } else if (abs(totalDrag) < 18f) {
+                                    // Tap in middle area triggers 3D flip between cover and lyrics
+                                    showLyrics = !showLyrics
                                 }
-                                accumulatedDragX = 0f
+                                totalDrag = 0f
                             },
-                            onDragCancel = {
-                                accumulatedDragX = 0f
-                            },
+                            onDragCancel = { totalDrag = 0f },
                             onHorizontalDrag = { change, dragAmount ->
                                 change.consume()
-                                accumulatedDragX += dragAmount
+                                totalDrag += dragAmount
                             }
                         )
                     },
                 contentAlignment = Alignment.Center
             ) {
-                if (showLyrics) {
-                    LyricsView(
-                        lyrics = lyrics,
-                        currentPositionMs = playerState.currentPositionMs,
-                        onSeekTo = onSeekTo
-                    )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            rotationY = flipRotation
+                            cameraDistance = 14f * density
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (flipRotation <= 90f) {
+                        // Front Side: Album Art Card
+                        if (song.albumArtUri != null) {
+                            AsyncImage(
+                                model = song.albumArtUri,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxWidth(0.88f)
+                                    .aspectRatio(1f)
+                                    .clip(RoundedCornerShape(22.dp))
+                                    .background(Color.White.copy(alpha = 0.1f))
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.88f)
+                                    .aspectRatio(1f)
+                                    .clip(RoundedCornerShape(22.dp))
+                                    .background(Color.White.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MusicNote,
+                                    contentDescription = null,
+                                    tint = Color.White.copy(alpha = 0.4f),
+                                    modifier = Modifier.size(72.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        // Back Side: Apple Music-style Kinetic Synced Lyrics View (Mirrored 180 so text is upright)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { rotationY = 180f }
+                        ) {
+                            LyricsView(
+                                lyrics = lyrics,
+                                currentPositionMs = playerState.currentPositionMs,
+                                onSeekTo = onSeekTo
+                            )
+                        }
+                    }
                 }
             }
 
@@ -305,7 +356,7 @@ fun ExpandedPlayer(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Shuffle / Repeat Toggle
+                        // Shuffle Button
                         IconButton(
                             onClick = onToggleShuffle,
                             modifier = Modifier.size(44.dp)
@@ -318,7 +369,7 @@ fun ExpandedPlayer(
                             )
                         }
 
-                        // Previous Track
+                        // Previous Track Button
                         IconButton(
                             onClick = onSkipPrevious,
                             modifier = Modifier.size(44.dp)
@@ -350,7 +401,7 @@ fun ExpandedPlayer(
                             }
                         }
 
-                        // Next Track
+                        // Next Track Button
                         IconButton(
                             onClick = onSkipNext,
                             modifier = Modifier.size(44.dp)
@@ -363,16 +414,22 @@ fun ExpandedPlayer(
                             )
                         }
 
-                        // Lyrics / Secondary Action Toggle
+                        // Loop / Repeat Mode Toggle Button
                         IconButton(
-                            onClick = { showLyrics = !showLyrics },
+                            onClick = onToggleRepeat,
                             modifier = Modifier.size(44.dp)
                         ) {
+                            val repeatIcon = if (playerState.repeatMode == Player.REPEAT_MODE_ONE) {
+                                Icons.Default.RepeatOne
+                            } else {
+                                Icons.Default.Repeat
+                            }
+                            val isRepeatActive = playerState.repeatMode != Player.REPEAT_MODE_OFF
                             Icon(
-                                imageVector = Icons.Default.Lyrics,
-                                contentDescription = "Synced Lyrics",
-                                tint = if (showLyrics) AccentMutedBlue else Color.White.copy(alpha = 0.7f),
-                                modifier = Modifier.size(20.dp)
+                                imageVector = repeatIcon,
+                                contentDescription = "Loop Mode",
+                                tint = if (isRepeatActive) AccentMutedBlue else Color.White.copy(alpha = 0.7f),
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
