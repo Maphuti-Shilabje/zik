@@ -35,9 +35,13 @@ data class LibraryUiState(
     val activeTab: LibraryTab = LibraryTab.FOLDERS, // Folder-first default for messy libraries
     val searchQuery: String = "",
     val isPlayerExpanded: Boolean = false,
+    val isSettingsOpen: Boolean = false,
     val activeLyrics: List<LyricLine> = emptyList(),
+    val selectedSongIds: Set<Long> = emptySet(),
     val hasPermission: Boolean = false
-)
+) {
+    val isSelectionMode: Boolean get() = selectedSongIds.isNotEmpty()
+}
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -88,6 +92,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = _uiState.value.copy(selectedFolder = null)
     }
 
+    fun openSettings() {
+        _uiState.value = _uiState.value.copy(isSettingsOpen = true)
+    }
+
+    fun closeSettings() {
+        _uiState.value = _uiState.value.copy(isSettingsOpen = false)
+    }
+
     fun updateSearchQuery(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query)
     }
@@ -96,7 +108,54 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = _uiState.value.copy(isPlayerExpanded = expanded)
     }
 
+    fun toggleSongSelection(songId: Long) {
+        val current = _uiState.value.selectedSongIds
+        val updated = if (current.contains(songId)) {
+            current - songId
+        } else {
+            current + songId
+        }
+        _uiState.value = _uiState.value.copy(selectedSongIds = updated)
+    }
+
+    fun selectAll(songs: List<Song>) {
+        val allIds = songs.map { it.id }.toSet()
+        _uiState.value = _uiState.value.copy(selectedSongIds = allIds)
+    }
+
+    fun clearSelection() {
+        _uiState.value = _uiState.value.copy(selectedSongIds = emptySet())
+    }
+
+    fun playSelectedNext() {
+        val selectedSongs = _uiState.value.songs.filter { it.id in _uiState.value.selectedSongIds }
+        if (selectedSongs.isNotEmpty()) {
+            val currentQueue = playerState.value.queue
+            val currentIndex = playerState.value.queueIndex.coerceAtLeast(0)
+            val newQueue = currentQueue.toMutableList().apply {
+                addAll(currentIndex + 1, selectedSongs)
+            }
+            musicController.playQueue(newQueue, currentIndex)
+        }
+        clearSelection()
+    }
+
+    fun addSelectedToQueue() {
+        val selectedSongs = _uiState.value.songs.filter { it.id in _uiState.value.selectedSongIds }
+        if (selectedSongs.isNotEmpty()) {
+            val currentQueue = playerState.value.queue
+            val newQueue = currentQueue + selectedSongs
+            val currentIndex = playerState.value.queueIndex.coerceAtLeast(0)
+            musicController.playQueue(newQueue, currentIndex)
+        }
+        clearSelection()
+    }
+
     fun playSong(song: Song, queue: List<Song>) {
+        if (_uiState.value.isSelectionMode) {
+            toggleSongSelection(song.id)
+            return
+        }
         val index = queue.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
         musicController.playQueue(queue, index)
         loadLyricsForSong(song)

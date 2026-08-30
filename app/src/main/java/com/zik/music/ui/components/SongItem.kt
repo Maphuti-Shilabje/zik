@@ -1,7 +1,8 @@
 package com.zik.music.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,8 +12,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,28 +30,64 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.zik.music.model.Song
 import com.zik.music.ui.theme.AccentMutedBlue
+import com.zik.music.ui.theme.PureBlack
+import com.zik.music.ui.theme.SurfaceLevel1
 import com.zik.music.ui.theme.SurfaceLevel2
 import com.zik.music.ui.theme.TextDisabled
 import com.zik.music.ui.theme.TextPrimary
 import com.zik.music.ui.theme.TextSecondary
 import java.util.Locale
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SongItem(
     song: Song,
     isPlaying: Boolean,
     isCurrent: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
+    isSelected: Boolean = false,
+    isSelectionMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val backgroundColor = when {
+        isSelected -> SurfaceLevel2
+        else -> PureBlack
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .clickable(onClick = onClick)
+            .background(backgroundColor)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Selection Checkbox or Album Art
+        if (isSelectionMode) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) AccentMutedBlue else SurfaceLevel2),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Selected",
+                        tint = PureBlack,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+
         // Album art thumbnail: 48x48dp, 4dp radius (UI.md)
         Box(
             modifier = Modifier

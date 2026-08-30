@@ -4,7 +4,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.zik.music.ui.components.ExpandedPlayer
 import com.zik.music.ui.components.MiniPlayer
 import com.zik.music.ui.screens.LibraryScreen
+import com.zik.music.ui.screens.SettingsScreen
 import com.zik.music.ui.theme.AccentMutedBlue
 import com.zik.music.ui.theme.PureBlack
 import com.zik.music.ui.theme.TextPrimary
@@ -37,12 +40,16 @@ fun MainScreen(
     val uiState by viewModel.uiState.collectAsState()
     val playerState by viewModel.playerState.collectAsState()
 
-    // Handle back button logically
-    BackHandler(enabled = uiState.isPlayerExpanded || uiState.selectedFolder != null) {
-        if (uiState.isPlayerExpanded) {
-            viewModel.setPlayerExpanded(false)
-        } else if (uiState.selectedFolder != null) {
-            viewModel.closeFolder()
+    // Handle back button hierarchically
+    BackHandler(
+        enabled = uiState.isSettingsOpen || uiState.isSelectionMode || 
+                  uiState.isPlayerExpanded || uiState.selectedFolder != null
+    ) {
+        when {
+            uiState.isSettingsOpen -> viewModel.closeSettings()
+            uiState.isSelectionMode -> viewModel.clearSelection()
+            uiState.isPlayerExpanded -> viewModel.setPlayerExpanded(false)
+            uiState.selectedFolder != null -> viewModel.closeFolder()
         }
     }
 
@@ -91,7 +98,13 @@ fun MainScreen(
                 onFolderSelected = { viewModel.openFolder(it) },
                 onCloseFolder = { viewModel.closeFolder() },
                 onSongSelected = { song, queue -> viewModel.playSong(song, queue) },
-                onSearchQueryChanged = { viewModel.updateSearchQuery(it) }
+                onToggleSongSelection = { viewModel.toggleSongSelection(it) },
+                onSelectAll = { viewModel.selectAll(it) },
+                onClearSelection = { viewModel.clearSelection() },
+                onPlaySelectedNext = { viewModel.playSelectedNext() },
+                onAddSelectedToQueue = { viewModel.addSelectedToQueue() },
+                onSearchQueryChanged = { viewModel.updateSearchQuery(it) },
+                onOpenSettings = { viewModel.openSettings() }
             )
 
             // Persistent Mini-Player Bar at bottom
@@ -110,7 +123,7 @@ fun MainScreen(
                 }
             }
 
-            // Expanding Full-Screen Player Sheet
+            // Expanding Full-Screen Player Sheet (Modal with Gestures & Waveform)
             AnimatedVisibility(
                 visible = uiState.isPlayerExpanded,
                 enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
@@ -126,6 +139,18 @@ fun MainScreen(
                     onToggleShuffle = { viewModel.musicController.toggleShuffle() },
                     onToggleRepeat = { viewModel.musicController.toggleRepeatMode() },
                     onCollapse = { viewModel.setPlayerExpanded(false) }
+                )
+            }
+
+            // Settings Screen Overlay
+            AnimatedVisibility(
+                visible = uiState.isSettingsOpen,
+                enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
+                exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+            ) {
+                SettingsScreen(
+                    onRescanLibrary = { viewModel.loadLibrary() },
+                    onBack = { viewModel.closeSettings() }
                 )
             }
         }

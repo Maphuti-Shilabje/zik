@@ -1,7 +1,9 @@
 package com.zik.music.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,11 +17,17 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,15 +40,16 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.zik.music.model.Folder
 import com.zik.music.model.Song
 import com.zik.music.playback.PlayerState
 import com.zik.music.ui.LibraryTab
 import com.zik.music.ui.LibraryUiState
+import com.zik.music.ui.components.FastScroller
 import com.zik.music.ui.components.FolderItem
 import com.zik.music.ui.components.SongItem
 import com.zik.music.ui.theme.AccentMutedBlue
@@ -50,6 +59,7 @@ import com.zik.music.ui.theme.SurfaceLevel2
 import com.zik.music.ui.theme.TextDisabled
 import com.zik.music.ui.theme.TextPrimary
 import com.zik.music.ui.theme.TextSecondary
+import kotlinx.coroutines.launch
 
 @Composable
 fun LibraryScreen(
@@ -59,78 +69,154 @@ fun LibraryScreen(
     onFolderSelected: (Folder) -> Unit,
     onCloseFolder: () -> Unit,
     onSongSelected: (Song, List<Song>) -> Unit,
+    onToggleSongSelection: (Long) -> Unit,
+    onSelectAll: (List<Song>) -> Unit,
+    onClearSelection: () -> Unit,
+    onPlaySelectedNext: () -> Unit,
+    onAddSelectedToQueue: () -> Unit,
     onSearchQueryChanged: (String) -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val songsListState = rememberLazyListState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(PureBlack)
             .statusBarsPadding()
     ) {
-        // App Title & Search Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Zik",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = onSearchQueryChanged,
-                placeholder = {
-                    Text(
-                        text = "Search tracks, folders, artists...",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextDisabled
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                trailingIcon = {
-                    if (uiState.searchQuery.isNotBlank()) {
-                        IconButton(onClick = { onSearchQueryChanged("") }) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear search",
-                                tint = TextSecondary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AccentMutedBlue,
-                    unfocusedBorderColor = SurfaceLevel2,
-                    focusedContainerColor = SurfaceLevel1,
-                    unfocusedContainerColor = SurfaceLevel1,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                ),
+        // Selection Mode Context Bar OR Standard Search & Settings Bar
+        if (uiState.isSelectionMode) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
-            )
+                    .height(56.dp)
+                    .background(SurfaceLevel2)
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onClearSelection) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cancel Selection",
+                        tint = TextPrimary
+                    )
+                }
+
+                Text(
+                    text = "${uiState.selectedSongIds.size} selected",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp)
+                )
+
+                // Select All Button
+                IconButton(onClick = { onSelectAll(uiState.songs) }) {
+                    Icon(
+                        imageVector = Icons.Default.SelectAll,
+                        contentDescription = "Select All",
+                        tint = TextPrimary
+                    )
+                }
+
+                // Play Next Button
+                IconButton(onClick = onPlaySelectedNext) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play Next",
+                        tint = AccentMutedBlue
+                    )
+                }
+
+                // Add to Queue Button
+                IconButton(onClick = onAddSelectedToQueue) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                        contentDescription = "Add to Queue",
+                        tint = TextPrimary
+                    )
+                }
+            }
+        } else {
+            // App Title, Search Bar & Settings Button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Zik",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                OutlinedTextField(
+                    value = uiState.searchQuery,
+                    onValueChange = onSearchQueryChanged,
+                    placeholder = {
+                        Text(
+                            text = "Search tracks, folders...",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextDisabled
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    trailingIcon = {
+                        if (uiState.searchQuery.isNotBlank()) {
+                            IconButton(onClick = { onSearchQueryChanged("") }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear search",
+                                    tint = TextSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AccentMutedBlue,
+                        unfocusedBorderColor = SurfaceLevel2,
+                        focusedContainerColor = SurfaceLevel1,
+                        unfocusedContainerColor = SurfaceLevel1,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Settings Button
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = TextSecondary
+                    )
+                }
+            }
         }
 
         // Drill-down Folder Header or Library Tabs
-        if (uiState.selectedFolder != null) {
+        if (uiState.selectedFolder != null && !uiState.isSelectionMode) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -139,7 +225,7 @@ fun LibraryScreen(
             ) {
                 IconButton(onClick = onCloseFolder) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back to Folders",
                         tint = TextPrimary
                     )
@@ -158,7 +244,7 @@ fun LibraryScreen(
                     )
                 }
             }
-        } else {
+        } else if (!uiState.isSelectionMode) {
             // Reorderable/Customizable Tabs (UI.md: fixed height, AMOLED styling)
             ScrollableTabRow(
                 selectedTabIndex = uiState.activeTab.ordinal,
@@ -191,7 +277,7 @@ fun LibraryScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         // Content Area
         if (uiState.isLoading) {
@@ -213,11 +299,15 @@ fun LibraryScreen(
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(folderSongs, key = { it.id }) { song ->
                             val isCurrent = playerState.currentSong?.id == song.id
+                            val isSelected = uiState.selectedSongIds.contains(song.id)
                             SongItem(
                                 song = song,
                                 isPlaying = playerState.isPlaying,
                                 isCurrent = isCurrent,
-                                onClick = { onSongSelected(song, folderSongs) }
+                                isSelected = isSelected,
+                                isSelectionMode = uiState.isSelectionMode,
+                                onClick = { onSongSelected(song, folderSongs) },
+                                onLongClick = { onToggleSongSelection(song.id) }
                             )
                         }
                     }
@@ -238,19 +328,50 @@ fun LibraryScreen(
                     }
                 }
 
-                // Main Tab: SONGS
+                // Main Tab: SONGS (With FastScroller on right)
                 uiState.activeTab == LibraryTab.SONGS -> {
                     val filteredSongs = uiState.songs.filter {
                         query.isEmpty() || it.title.lowercase().contains(query) || it.artist.lowercase().contains(query)
                     }
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(filteredSongs, key = { it.id }) { song ->
-                            val isCurrent = playerState.currentSong?.id == song.id
-                            SongItem(
-                                song = song,
-                                isPlaying = playerState.isPlaying,
-                                isCurrent = isCurrent,
-                                onClick = { onSongSelected(song, filteredSongs) }
+
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            state = songsListState,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(filteredSongs, key = { it.id }) { song ->
+                                val isCurrent = playerState.currentSong?.id == song.id
+                                val isSelected = uiState.selectedSongIds.contains(song.id)
+                                SongItem(
+                                    song = song,
+                                    isPlaying = playerState.isPlaying,
+                                    isCurrent = isCurrent,
+                                    isSelected = isSelected,
+                                    isSelectionMode = uiState.isSelectionMode,
+                                    onClick = { onSongSelected(song, filteredSongs) },
+                                    onLongClick = { onToggleSongSelection(song.id) }
+                                )
+                            }
+                        }
+
+                        // Alphabet Fast-Scroller Sidebar
+                        if (filteredSongs.size > 10) {
+                            FastScroller(
+                                onLetterSelected = { letter ->
+                                    val targetIndex = if (letter == '#') {
+                                        filteredSongs.indexOfFirst { !it.title.first().isLetter() }
+                                    } else {
+                                        filteredSongs.indexOfFirst {
+                                            it.title.startsWith(letter, ignoreCase = true)
+                                        }
+                                    }
+                                    if (targetIndex != -1) {
+                                        coroutineScope.launch {
+                                            songsListState.scrollToItem(targetIndex)
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.align(Alignment.CenterEnd)
                             )
                         }
                     }

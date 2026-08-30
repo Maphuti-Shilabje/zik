@@ -1,7 +1,9 @@
 package com.zik.music.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -123,7 +125,8 @@ fun ExpandedPlayer(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Main Content Area: Album Art OR Synced Lyrics
+            // Main Content Area: Album Art OR Synced Lyrics (Swipe Left/Right to skip tracks)
+            var totalDragX by remember(song.id) { mutableFloatStateOf(0f) }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -137,13 +140,31 @@ fun ExpandedPlayer(
                         onSeekTo = onSeekTo
                     )
                 } else {
-                    // Album Art (8dp radius, strict square)
+                    // Album Art with Horizontal Swipe Gestures (Swipe left -> Next, Swipe right -> Prev)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(0.92f)
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(SurfaceLevel2),
+                            .background(SurfaceLevel2)
+                            .pointerInput(song.id) {
+                                detectHorizontalDragGestures(
+                                    onDragStart = { totalDragX = 0f },
+                                    onDragEnd = {
+                                        if (totalDragX < -80f) {
+                                            onSkipNext()
+                                        } else if (totalDragX > 80f) {
+                                            onSkipPrevious()
+                                        }
+                                        totalDragX = 0f
+                                    },
+                                    onDragCancel = { totalDragX = 0f },
+                                    onHorizontalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        totalDragX += dragAmount
+                                    }
+                                )
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         if (song.albumArtUri != null) {
@@ -190,26 +211,19 @@ fun ExpandedPlayer(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Progress Slider (2dp track, 3dp fill per UI.md)
+            // Interactive Waveform Progress & Seekbar
             Column(modifier = Modifier.fillMaxWidth()) {
-                Slider(
-                    value = currentSliderValue,
-                    onValueChange = {
-                        isUserScrubbing = true
-                        scrubPosition = it
-                    },
-                    onValueChangeFinished = {
-                        val seekMs = (scrubPosition * playerState.durationMs).toLong()
+                WaveformSeekBar(
+                    progress = currentSliderValue,
+                    songId = song.id,
+                    onSeek = { fraction ->
+                        val seekMs = (fraction * playerState.durationMs).toLong()
                         onSeekTo(seekMs)
-                        isUserScrubbing = false
                     },
-                    colors = SliderDefaults.colors(
-                        thumbColor = AccentMutedBlue,
-                        activeTrackColor = AccentMutedBlue,
-                        inactiveTrackColor = TrackBarBackground
-                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
