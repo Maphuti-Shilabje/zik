@@ -71,6 +71,8 @@ import kotlin.math.abs
 fun ExpandedPlayer(
     playerState: PlayerState,
     lyrics: List<LyricLine>,
+    isFavorite: Boolean = false,
+    onToggleFavorite: () -> Unit = {},
     onTogglePlayPause: () -> Unit,
     onSkipNext: () -> Unit,
     onSkipPrevious: () -> Unit,
@@ -82,7 +84,6 @@ fun ExpandedPlayer(
 ) {
     val song = playerState.currentSong ?: return
     var showLyrics by remember { mutableStateOf(false) }
-    var isFavorite by remember { mutableStateOf(false) }
 
     val currentProgress = if (playerState.durationMs > 0) {
         (playerState.currentPositionMs.toFloat() / playerState.durationMs.toFloat()).coerceIn(0f, 1f)
@@ -176,7 +177,7 @@ fun ExpandedPlayer(
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
                     modifier = Modifier.size(44.dp)
                 ) {
-                    IconButton(onClick = { isFavorite = !isFavorite }) {
+                    IconButton(onClick = onToggleFavorite) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Favorite",

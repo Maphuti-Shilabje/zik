@@ -18,8 +18,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 
-enum class LibraryTab(val title: String) {
+enum class LibraryTab(val title: String, val isFavorite: Boolean = false) {
     FOLDERS("Folders"),
+    FAVORITES("Favorites", isFavorite = true),
     SONGS("Songs"),
     ALBUMS("Albums"),
     ARTISTS("Artists")
@@ -32,7 +33,15 @@ data class LibraryUiState(
     val albums: Map<String, List<Song>> = emptyMap(),
     val artists: Map<String, List<Song>> = emptyMap(),
     val selectedFolder: Folder? = null,
-    val activeTab: LibraryTab = LibraryTab.FOLDERS, // Folder-first default for messy libraries
+    val activeTab: LibraryTab = LibraryTab.FOLDERS,
+    val tabOrder: List<LibraryTab> = listOf(
+        LibraryTab.FOLDERS,
+        LibraryTab.FAVORITES,
+        LibraryTab.SONGS,
+        LibraryTab.ALBUMS,
+        LibraryTab.ARTISTS
+    ),
+    val favoriteSongIds: Set<Long> = emptySet(),
     val searchQuery: String = "",
     val isPlayerExpanded: Boolean = false,
     val isSettingsOpen: Boolean = false,
@@ -55,6 +64,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         musicController.connect()
+    }
+
+    fun toggleFavorite(songId: Long) {
+        val current = _uiState.value.favoriteSongIds
+        val updated = if (current.contains(songId)) {
+            current - songId
+        } else {
+            current + songId
+        }
+        _uiState.value = _uiState.value.copy(favoriteSongIds = updated)
+    }
+
+    fun reorderTabs(fromIndex: Int, toIndex: Int) {
+        val current = _uiState.value.tabOrder.toMutableList()
+        if (fromIndex in current.indices && toIndex in current.indices) {
+            val item = current.removeAt(fromIndex)
+            current.add(toIndex, item)
+            _uiState.value = _uiState.value.copy(tabOrder = current)
+        }
     }
 
     fun onPermissionGranted() {

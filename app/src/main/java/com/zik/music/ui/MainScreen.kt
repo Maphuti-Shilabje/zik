@@ -95,6 +95,7 @@ fun MainScreen(
                 uiState = uiState,
                 playerState = playerState,
                 onTabSelected = { viewModel.selectTab(it) },
+                onReorderTabs = { from, to -> viewModel.reorderTabs(from, to) },
                 onFolderSelected = { viewModel.openFolder(it) },
                 onCloseFolder = { viewModel.closeFolder() },
                 onSongSelected = { song, queue -> viewModel.playSong(song, queue) },
@@ -132,6 +133,8 @@ fun MainScreen(
                 ExpandedPlayer(
                     playerState = playerState,
                     lyrics = uiState.activeLyrics,
+                    isFavorite = playerState.currentSong?.id?.let { uiState.favoriteSongIds.contains(it) } == true,
+                    onToggleFavorite = { playerState.currentSong?.let { viewModel.toggleFavorite(it.id) } },
                     onTogglePlayPause = { viewModel.musicController.togglePlayPause() },
                     onSkipNext = { viewModel.musicController.skipToNext() },
                     onSkipPrevious = { viewModel.musicController.skipToPrevious() },
