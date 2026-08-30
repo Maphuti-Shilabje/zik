@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -33,7 +32,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -50,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -57,13 +56,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -94,12 +92,18 @@ fun LibraryScreen(
     onClearSelection: () -> Unit,
     onPlaySelectedNext: () -> Unit,
     onAddSelectedToQueue: () -> Unit,
+    onPlaySingleSongNext: (Song) -> Unit = {},
+    onAddSingleSongToQueue: (Song) -> Unit = {},
+    onToggleFavorite: (Long) -> Unit = {},
     onSearchQueryChanged: (String) -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
     val songsListState = rememberLazyListState()
+
+    var draggingTabIndex by remember { mutableStateOf<Int?>(null) }
+    var tabDragOffsetPx by remember { mutableFloatStateOf(0f) }
 
     Box(
         modifier = modifier
@@ -302,7 +306,7 @@ fun LibraryScreen(
                     }
                 }
             } else if (!uiState.isSelectionMode) {
-                // Interactive Drag-and-Drop Reorderable Tab Row
+                // Highly Responsive 120fps GPU-Accelerated Drag-to-Reorder Tab Row
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -312,72 +316,58 @@ fun LibraryScreen(
                 ) {
                     itemsIndexed(uiState.tabOrder, key = { _, tab -> tab.name }) { index, tab ->
                         val isSelected = uiState.activeTab == tab
-                        var isDragging by remember { mutableStateOf(false) }
-                        var dragOffsetX by remember { mutableFloatStateOf(0f) }
+                        val isCurrentDragging = draggingTabIndex == index
 
                         Surface(
                             shape = RoundedCornerShape(18.dp),
                             color = if (isSelected) AccentMutedBlue else Color.White.copy(alpha = 0.08f),
                             border = BorderStroke(
                                 1.dp,
-                                if (isDragging) AccentMutedBlue else if (isSelected) AccentMutedBlue else Color.White.copy(alpha = 0.15f)
+                                if (isCurrentDragging) AccentMutedBlue.copy(alpha = 0.8f) else if (isSelected) AccentMutedBlue else Color.White.copy(alpha = 0.15f)
                             ),
                             modifier = Modifier
-                                .offset { IntOffset(x = dragOffsetX.roundToInt(), y = 0) }
-                                .scale(if (isDragging) 1.08f else 1.0f)
-                                .zIndex(if (isDragging) 10f else 1f)
+                                .zIndex(if (isCurrentDragging) 10f else 1f)
+                                .graphicsLayer {
+                                    translationX = if (isCurrentDragging) tabDragOffsetPx else 0f
+                                    scaleX = if (isCurrentDragging) 1.08f else 1.0f
+                                    scaleY = if (isCurrentDragging) 1.08f else 1.0f
+                                }
                                 .clip(RoundedCornerShape(18.dp))
-                                .clickable { onTabSelected(tab) }
+                                .clickable {
+                                    if (draggingTabIndex == null) {
+                                        onTabSelected(tab)
+                                    }
+                                }
                                 .pointerInput(tab) {
                                     detectHorizontalDragGestures(
                                         onDragStart = {
-                                            isDragging = true
-                                            dragOffsetX = 0f
+                                            draggingTabIndex = index
+                                            tabDragOffsetPx = 0f
                                         },
                                         onDragEnd = {
-                                            isDragging = false
-                                            val threshold = 55.dp.toPx()
-                                            if (dragOffsetX > threshold && index < uiState.tabOrder.size - 1) {
-                                                onReorderTabs(index, index + 1)
-                                            } else if (dragOffsetX < -threshold && index > 0) {
-                                                onReorderTabs(index, index - 1)
+                                            val shiftSlots = (tabDragOffsetPx / 200f).roundToInt()
+                                            val targetIndex = (index + shiftSlots).coerceIn(0, uiState.tabOrder.size - 1)
+                                            if (targetIndex != index) {
+                                                onReorderTabs(index, targetIndex)
                                             }
-                                            dragOffsetX = 0f
+                                            draggingTabIndex = null
+                                            tabDragOffsetPx = 0f
                                         },
                                         onDragCancel = {
-                                            isDragging = false
-                                            dragOffsetX = 0f
+                                            draggingTabIndex = null
+                                            tabDragOffsetPx = 0f
                                         },
                                         onHorizontalDrag = { change, dragAmount ->
                                             change.consume()
-                                            dragOffsetX += dragAmount
-                                            val threshold = 70.dp.toPx()
-                                            if (dragOffsetX > threshold && index < uiState.tabOrder.size - 1) {
-                                                onReorderTabs(index, index + 1)
-                                                dragOffsetX = 0f
-                                            } else if (dragOffsetX < -threshold && index > 0) {
-                                                onReorderTabs(index, index - 1)
-                                                dragOffsetX = 0f
-                                            }
+                                            tabDragOffsetPx += dragAmount
                                         }
                                     )
                                 }
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
+                            Box(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                if (tab.isFavorite) {
-                                    Icon(
-                                        imageVector = Icons.Default.Favorite,
-                                        contentDescription = null,
-                                        tint = if (isSelected) PureBlack else Color(0xFFFF4081),
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .padding(end = 4.dp)
-                                    )
-                                }
                                 Text(
                                     text = tab.title,
                                     fontSize = 13.sp,
@@ -416,14 +406,19 @@ fun LibraryScreen(
                             items(folderSongs, key = { it.id }) { song ->
                                 val isCurrent = playerState.currentSong?.id == song.id
                                 val isSelected = uiState.selectedSongIds.contains(song.id)
+                                val isFavorite = uiState.favoriteSongIds.contains(song.id)
                                 SongItem(
                                     song = song,
                                     isPlaying = playerState.isPlaying,
                                     isCurrent = isCurrent,
                                     isSelected = isSelected,
                                     isSelectionMode = uiState.isSelectionMode,
+                                    isFavorite = isFavorite,
                                     onClick = { onSongSelected(song, folderSongs) },
-                                    onLongClick = { onToggleSongSelection(song.id) }
+                                    onLongClick = { onToggleSongSelection(song.id) },
+                                    onPlayNext = { onPlaySingleSongNext(song) },
+                                    onAddToQueue = { onAddSingleSongToQueue(song) },
+                                    onToggleFavorite = { onToggleFavorite(song.id) }
                                 )
                             }
                         }
@@ -468,7 +463,7 @@ fun LibraryScreen(
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
-                                            text = "Tap the heart on the Now Playing screen to save your favorite songs here.",
+                                            text = "Tap the heart in the Now Playing screen or use the 3-dots menu to add songs here.",
                                             fontSize = 13.sp,
                                             color = Color.White.copy(alpha = 0.65f),
                                             textAlign = TextAlign.Center
@@ -490,8 +485,12 @@ fun LibraryScreen(
                                         isCurrent = isCurrent,
                                         isSelected = isSelected,
                                         isSelectionMode = uiState.isSelectionMode,
+                                        isFavorite = true,
                                         onClick = { onSongSelected(song, favoriteSongs) },
-                                        onLongClick = { onToggleSongSelection(song.id) }
+                                        onLongClick = { onToggleSongSelection(song.id) },
+                                        onPlayNext = { onPlaySingleSongNext(song) },
+                                        onAddToQueue = { onAddSingleSongToQueue(song) },
+                                        onToggleFavorite = { onToggleFavorite(song.id) }
                                     )
                                 }
                             }
@@ -531,14 +530,19 @@ fun LibraryScreen(
                                 items(filteredSongs, key = { it.id }) { song ->
                                     val isCurrent = playerState.currentSong?.id == song.id
                                     val isSelected = uiState.selectedSongIds.contains(song.id)
+                                    val isFavorite = uiState.favoriteSongIds.contains(song.id)
                                     SongItem(
                                         song = song,
                                         isPlaying = playerState.isPlaying,
                                         isCurrent = isCurrent,
                                         isSelected = isSelected,
                                         isSelectionMode = uiState.isSelectionMode,
+                                        isFavorite = isFavorite,
                                         onClick = { onSongSelected(song, filteredSongs) },
-                                        onLongClick = { onToggleSongSelection(song.id) }
+                                        onLongClick = { onToggleSongSelection(song.id) },
+                                        onPlayNext = { onPlaySingleSongNext(song) },
+                                        onAddToQueue = { onAddSingleSongToQueue(song) },
+                                        onToggleFavorite = { onToggleFavorite(song.id) }
                                     )
                                 }
                             }
@@ -576,11 +580,17 @@ fun LibraryScreen(
                             contentPadding = PaddingValues(bottom = 100.dp)
                         ) {
                             items(filteredAlbums, key = { it.first }) { (albumName, albumSongs) ->
+                                val firstSong = albumSongs.first()
+                                val isFavorite = uiState.favoriteSongIds.contains(firstSong.id)
                                 SongItem(
-                                    song = albumSongs.first(),
+                                    song = firstSong,
                                     isPlaying = false,
                                     isCurrent = false,
-                                    onClick = { onSongSelected(albumSongs.first(), albumSongs) }
+                                    isFavorite = isFavorite,
+                                    onClick = { onSongSelected(firstSong, albumSongs) },
+                                    onPlayNext = { onPlaySingleSongNext(firstSong) },
+                                    onAddToQueue = { onAddSingleSongToQueue(firstSong) },
+                                    onToggleFavorite = { onToggleFavorite(firstSong.id) }
                                 )
                             }
                         }
@@ -596,11 +606,17 @@ fun LibraryScreen(
                             contentPadding = PaddingValues(bottom = 100.dp)
                         ) {
                             items(filteredArtists, key = { it.first }) { (artistName, artistSongs) ->
+                                val firstSong = artistSongs.first()
+                                val isFavorite = uiState.favoriteSongIds.contains(firstSong.id)
                                 SongItem(
-                                    song = artistSongs.first(),
+                                    song = firstSong,
                                     isPlaying = false,
                                     isCurrent = false,
-                                    onClick = { onSongSelected(artistSongs.first(), artistSongs) }
+                                    isFavorite = isFavorite,
+                                    onClick = { onSongSelected(firstSong, artistSongs) },
+                                    onPlayNext = { onPlaySingleSongNext(firstSong) },
+                                    onAddToQueue = { onAddSingleSongToQueue(firstSong) },
+                                    onToggleFavorite = { onToggleFavorite(firstSong.id) }
                                 )
                             }
                         }

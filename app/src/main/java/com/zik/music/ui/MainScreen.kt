@@ -104,6 +104,9 @@ fun MainScreen(
                 onClearSelection = { viewModel.clearSelection() },
                 onPlaySelectedNext = { viewModel.playSelectedNext() },
                 onAddSelectedToQueue = { viewModel.addSelectedToQueue() },
+                onPlaySingleSongNext = { viewModel.playSingleSongNext(it) },
+                onAddSingleSongToQueue = { viewModel.addSingleSongToQueue(it) },
+                onToggleFavorite = { viewModel.toggleFavorite(it) },
                 onSearchQueryChanged = { viewModel.updateSearchQuery(it) },
                 onOpenSettings = { viewModel.openSettings() }
             )

@@ -3,6 +3,7 @@ package com.zik.music.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,13 +17,25 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,7 +49,6 @@ import coil.compose.AsyncImage
 import com.zik.music.model.Song
 import com.zik.music.ui.theme.AccentMutedBlue
 import com.zik.music.ui.theme.PureBlack
-import com.zik.music.ui.theme.TextDisabled
 import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -47,10 +59,16 @@ fun SongItem(
     isCurrent: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
+    onPlayNext: () -> Unit = {},
+    onAddToQueue: () -> Unit = {},
+    onToggleFavorite: () -> Unit = {},
+    isFavorite: Boolean = false,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     val cardColor = when {
         isSelected -> AccentMutedBlue.copy(alpha = 0.22f)
         isCurrent -> Color.White.copy(alpha = 0.16f)
@@ -149,6 +167,87 @@ fun SongItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+
+            // 3 Vertical Dots Menu (Hidden during multi-selection mode)
+            if (!isSelectionMode) {
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Options",
+                            tint = Color.White.copy(alpha = 0.70f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Glassmorphic Quick Options Dropdown Menu
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier
+                            .background(Color(0xF0181C26))
+                            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)), RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(16.dp))
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Play Next", color = Color.White, fontSize = 14.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    tint = AccentMutedBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onPlayNext()
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = { Text("Add to Queue", color = Color.White, fontSize = 14.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onAddToQueue()
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = if (isFavorite) "Remove from Favorites" else "Add to Favorites",
+                                    color = Color.White,
+                                    fontSize = 14.sp
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = null,
+                                    tint = if (isFavorite) Color(0xFFFF4081) else Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onToggleFavorite()
+                            }
+                        )
+                    }
+                }
             }
         }
     }

@@ -179,6 +179,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         clearSelection()
     }
 
+    fun playSingleSongNext(song: Song) {
+        val currentQueue = playerState.value.queue
+        if (currentQueue.isEmpty()) {
+            musicController.playQueue(listOf(song), 0)
+        } else {
+            val currentIndex = playerState.value.queueIndex.coerceAtLeast(0)
+            val newQueue = currentQueue.toMutableList().apply {
+                add(currentIndex + 1, song)
+            }
+            musicController.playQueue(newQueue, currentIndex)
+        }
+    }
+
+    fun addSingleSongToQueue(song: Song) {
+        val currentQueue = playerState.value.queue
+        if (currentQueue.isEmpty()) {
+            musicController.playQueue(listOf(song), 0)
+        } else {
+            val newQueue = currentQueue + song
+            val currentIndex = playerState.value.queueIndex.coerceAtLeast(0)
+            musicController.playQueue(newQueue, currentIndex)
+        }
+    }
+
     fun playSong(song: Song, queue: List<Song>) {
         if (_uiState.value.isSelectionMode) {
             toggleSongSelection(song.id)
