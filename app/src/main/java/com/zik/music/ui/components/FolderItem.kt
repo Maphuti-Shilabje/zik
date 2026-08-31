@@ -38,8 +38,8 @@ fun FolderItem(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White.copy(alpha = 0.04f),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 3.5.dp)
@@ -48,7 +48,7 @@ fun FolderItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(

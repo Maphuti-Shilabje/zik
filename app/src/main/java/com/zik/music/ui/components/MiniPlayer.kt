@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,8 +56,8 @@ fun MiniPlayer(
 
     Surface(
         shape = RoundedCornerShape(26.dp),
-        color = Color(0x331E1E1E),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -70,15 +69,15 @@ fun MiniPlayer(
                 progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(2.5.dp),
+                    .height(2.dp),
                 color = AccentMutedBlue,
-                trackColor = Color.White.copy(alpha = 0.1f),
+                trackColor = Color.White.copy(alpha = 0.08f),
             )
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp)
+                    .height(58.dp)
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -87,7 +86,7 @@ fun MiniPlayer(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(Color.White.copy(alpha = 0.12f)),
+                        .background(Color.White.copy(alpha = 0.08f)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (song.albumArtUri != null) {

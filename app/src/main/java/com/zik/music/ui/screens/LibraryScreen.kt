@@ -106,15 +106,7 @@ fun LibraryScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF141926),
-                        Color(0xFF0C0E14),
-                        PureBlack
-                    )
-                )
-            )
+            .background(PureBlack)
             .statusBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {

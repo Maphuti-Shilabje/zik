@@ -68,23 +68,23 @@ fun SongItem(
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
-    // Pure crystal-clear glassmorphism: zero muddy grey fill, letting the ambient backdrop glow through
+    // Transparent body with thin glass border (retaining blue focused glow)
     val cardColor = when {
         isSelected -> AccentMutedBlue.copy(alpha = 0.22f)
         isCurrent -> AccentMutedBlue.copy(alpha = 0.12f)
-        else -> Color.White.copy(alpha = 0.04f)
+        else -> Color.Transparent
     }
 
-    val borderColor = when {
-        isSelected -> AccentMutedBlue.copy(alpha = 0.70f)
-        isCurrent -> AccentMutedBlue.copy(alpha = 0.45f)
-        else -> Color.White.copy(alpha = 0.10f)
+    val borderStroke = when {
+        isSelected -> BorderStroke(1.dp, AccentMutedBlue.copy(alpha = 0.70f))
+        isCurrent -> BorderStroke(1.dp, AccentMutedBlue.copy(alpha = 0.45f))
+        else -> BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
     }
 
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = cardColor,
-        border = BorderStroke(1.dp, borderColor),
+        border = borderStroke,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 3.5.dp)
@@ -96,7 +96,7 @@ fun SongItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Selection Checkbox or Album Art
