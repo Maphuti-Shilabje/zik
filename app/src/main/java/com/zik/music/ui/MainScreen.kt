@@ -144,6 +144,9 @@ fun MainScreen(
                     onSeekTo = { viewModel.musicController.seekTo(it) },
                     onToggleShuffle = { viewModel.musicController.toggleShuffle() },
                     onToggleRepeat = { viewModel.musicController.toggleRepeatMode() },
+                    onPlayQueueIndex = { viewModel.playQueueIndex(it) },
+                    onRemoveQueueIndex = { viewModel.removeQueueItem(it) },
+                    onClearUpcomingQueue = { viewModel.clearUpcomingQueue() },
                     onCollapse = { viewModel.setPlayerExpanded(false) }
                 )
             }

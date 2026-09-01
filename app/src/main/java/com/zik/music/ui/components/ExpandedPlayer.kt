@@ -1,8 +1,13 @@
 package com.zik.music.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,10 +26,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MusicNote
@@ -37,19 +44,16 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -65,7 +69,6 @@ import com.zik.music.model.LyricLine
 import com.zik.music.playback.PlayerState
 import com.zik.music.ui.theme.AccentMutedBlue
 import com.zik.music.ui.theme.PureBlack
-import kotlin.math.abs
 
 @Composable
 fun ExpandedPlayer(
@@ -79,11 +82,15 @@ fun ExpandedPlayer(
     onSeekTo: (Long) -> Unit,
     onToggleShuffle: () -> Unit,
     onToggleRepeat: () -> Unit,
+    onPlayQueueIndex: (Int) -> Unit = {},
+    onRemoveQueueIndex: (Int) -> Unit = {},
+    onClearUpcomingQueue: () -> Unit = {},
     onCollapse: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val song = playerState.currentSong ?: return
     var showLyrics by remember { mutableStateOf(false) }
+    var showQueue by remember { mutableStateOf(false) }
 
     val currentProgress = if (playerState.durationMs > 0) {
         (playerState.currentPositionMs.toFloat() / playerState.durationMs.toFloat()).coerceIn(0f, 1f)
@@ -138,7 +145,7 @@ fun ExpandedPlayer(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Bar: Back Button, "Now Playing", Favorite Button
+            // Top Bar: Back Button, "Now Playing", Favorite & Queue Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -170,20 +177,43 @@ fun ExpandedPlayer(
                     color = Color.White
                 )
 
-                // Frosted Circular Favorite Button
-                Surface(
-                    shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.15f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    IconButton(onClick = onToggleFavorite) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) Color(0xFFFF4081) else Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                // Action Buttons: Favorite & Queue
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Frosted Circular Favorite Button
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.White.copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        IconButton(onClick = onToggleFavorite) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Favorite",
+                                tint = if (isFavorite) Color(0xFFFF4081) else Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    // Frosted Circular Queue Button
+                    Surface(
+                        shape = CircleShape,
+                        color = if (showQueue) AccentMutedBlue else Color.White.copy(alpha = 0.15f),
+                        border = BorderStroke(
+                            1.dp,
+                            if (showQueue) AccentMutedBlue else Color.White.copy(alpha = 0.25f)
+                        ),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        IconButton(onClick = { showQueue = !showQueue }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.QueueMusic,
+                                contentDescription = "Queue",
+                                tint = if (showQueue) PureBlack else Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -444,6 +474,25 @@ fun ExpandedPlayer(
                     }
                 }
             }
+        }
+
+        // 3. Queue Bottom Sheet Modal Overlay
+        AnimatedVisibility(
+            visible = showQueue,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            QueueSheet(
+                playerState = playerState,
+                onPlayIndex = { index ->
+                    onPlayQueueIndex(index)
+                    showQueue = false
+                },
+                onRemoveIndex = onRemoveQueueIndex,
+                onClearUpcoming = onClearUpcomingQueue,
+                onClose = { showQueue = false }
+            )
         }
     }
 }
