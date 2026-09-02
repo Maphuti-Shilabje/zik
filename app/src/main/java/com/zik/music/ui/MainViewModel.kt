@@ -8,6 +8,8 @@ import com.zik.music.data.MediaStoreScanner
 import com.zik.music.model.Folder
 import com.zik.music.model.LyricLine
 import com.zik.music.model.Song
+import com.zik.music.playback.AudioEffectsManager
+import com.zik.music.playback.EqualizerUiState
 import com.zik.music.playback.MusicController
 import com.zik.music.playback.PlayerState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +46,7 @@ data class LibraryUiState(
     val searchQuery: String = "",
     val isPlayerExpanded: Boolean = false,
     val isSettingsOpen: Boolean = false,
+    val isEqualizerOpen: Boolean = false,
     val activeLyrics: List<LyricLine> = emptyList(),
     val selectedSongIds: Set<Long> = emptySet(),
     val hasPermission: Boolean = false
@@ -55,6 +58,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val scanner = MediaStoreScanner(application)
     val musicController = MusicController(application)
+    val audioEffectsManager = AudioEffectsManager(application)
+
+    val eqUiState: StateFlow<EqualizerUiState> = audioEffectsManager.state
 
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
@@ -233,8 +239,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun openEqualizer() {
+        _uiState.value = _uiState.value.copy(isEqualizerOpen = true)
+    }
+
+    fun closeEqualizer() {
+        _uiState.value = _uiState.value.copy(isEqualizerOpen = false)
+    }
+
+    fun toggleEqualizer(enabled: Boolean) {
+        audioEffectsManager.setEnabled(enabled)
+    }
+
+    fun setEqBandLevel(bandIndex: Int, level: Int) {
+        audioEffectsManager.setBandLevel(bandIndex, level)
+    }
+
+    fun setEqBassBoost(strength: Int) {
+        audioEffectsManager.setBassBoost(strength)
+    }
+
+    fun setEqVirtualizer(strength: Int) {
+        audioEffectsManager.setVirtualizer(strength)
+    }
+
+    fun setEqPreset(presetIndex: Int) {
+        audioEffectsManager.usePreset(presetIndex)
+    }
+
+    fun resetEqToFlat() {
+        audioEffectsManager.resetToFlat()
+    }
+
     override fun onCleared() {
         super.onCleared()
+        audioEffectsManager.release()
         musicController.release()
     }
 }

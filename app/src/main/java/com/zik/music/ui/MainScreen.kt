@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.zik.music.ui.components.ExpandedPlayer
 import com.zik.music.ui.components.MiniPlayer
+import com.zik.music.ui.screens.EqualizerScreen
 import com.zik.music.ui.screens.LibraryScreen
 import com.zik.music.ui.screens.SettingsScreen
 import com.zik.music.ui.theme.AccentMutedBlue
@@ -39,13 +40,15 @@ fun MainScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val playerState by viewModel.playerState.collectAsState()
+    val eqState by viewModel.eqUiState.collectAsState()
 
     // Handle back button hierarchically
     BackHandler(
-        enabled = uiState.isSettingsOpen || uiState.isSelectionMode || 
+        enabled = uiState.isEqualizerOpen || uiState.isSettingsOpen || uiState.isSelectionMode || 
                   uiState.isPlayerExpanded || uiState.selectedFolder != null
     ) {
         when {
+            uiState.isEqualizerOpen -> viewModel.closeEqualizer()
             uiState.isSettingsOpen -> viewModel.closeSettings()
             uiState.isSelectionMode -> viewModel.clearSelection()
             uiState.isPlayerExpanded -> viewModel.setPlayerExpanded(false)
@@ -147,6 +150,7 @@ fun MainScreen(
                     onPlayQueueIndex = { viewModel.playQueueIndex(it) },
                     onRemoveQueueIndex = { viewModel.removeQueueItem(it) },
                     onClearUpcomingQueue = { viewModel.clearUpcomingQueue() },
+                    onOpenEqualizer = { viewModel.openEqualizer() },
                     onCollapse = { viewModel.setPlayerExpanded(false) }
                 )
             }
@@ -159,7 +163,26 @@ fun MainScreen(
             ) {
                 SettingsScreen(
                     onRescanLibrary = { viewModel.loadLibrary() },
+                    onOpenEqualizer = { viewModel.openEqualizer() },
                     onBack = { viewModel.closeSettings() }
+                )
+            }
+
+            // Equalizer Screen Overlay
+            AnimatedVisibility(
+                visible = uiState.isEqualizerOpen,
+                enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
+                exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+            ) {
+                EqualizerScreen(
+                    eqState = eqState,
+                    onToggleEnabled = { viewModel.toggleEqualizer(it) },
+                    onBandLevelChanged = { band, lvl -> viewModel.setEqBandLevel(band, lvl) },
+                    onBassBoostChanged = { viewModel.setEqBassBoost(it) },
+                    onVirtualizerChanged = { viewModel.setEqVirtualizer(it) },
+                    onPresetSelected = { viewModel.setEqPreset(it) },
+                    onResetToFlat = { viewModel.resetEqToFlat() },
+                    onBack = { viewModel.closeEqualizer() }
                 )
             }
         }

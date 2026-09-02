@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MusicNote
@@ -85,6 +86,7 @@ fun ExpandedPlayer(
     onPlayQueueIndex: (Int) -> Unit = {},
     onRemoveQueueIndex: (Int) -> Unit = {},
     onClearUpcomingQueue: () -> Unit = {},
+    onOpenEqualizer: () -> Unit = {},
     onCollapse: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -145,7 +147,7 @@ fun ExpandedPlayer(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Bar: Back Button, "Now Playing", Favorite & Queue Buttons
+            // Top Bar: Back Button, "Now Playing", Favorite, Equalizer & Queue Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -177,7 +179,7 @@ fun ExpandedPlayer(
                     color = Color.White
                 )
 
-                // Action Buttons: Favorite & Queue
+                // Action Buttons: Favorite, Equalizer & Queue
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     // Frosted Circular Favorite Button
                     Surface(
@@ -191,6 +193,23 @@ fun ExpandedPlayer(
                                 imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = "Favorite",
                                 tint = if (isFavorite) Color(0xFFFF4081) else Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    // Frosted Circular Equalizer Button
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.White.copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        IconButton(onClick = onOpenEqualizer) {
+                            Icon(
+                                imageVector = Icons.Default.Equalizer,
+                                contentDescription = "Equalizer",
+                                tint = AccentMutedBlue,
                                 modifier = Modifier.size(20.dp)
                             )
                         }

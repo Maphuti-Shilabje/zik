@@ -2,6 +2,7 @@ package com.zik.music.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,6 +51,7 @@ import com.zik.music.ui.theme.SurfaceLevel2
 @Composable
 fun SettingsScreen(
     onRescanLibrary: () -> Unit,
+    onOpenEqualizer: () -> Unit = {},
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -89,7 +92,7 @@ fun SettingsScreen(
                 }
                 Text(
                     text = "Settings",
-                    fontSize = 20.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     modifier = Modifier.padding(start = 14.dp)
@@ -102,6 +105,48 @@ fun SettingsScreen(
             ) {
                 item {
                     SettingsSectionHeader("AUDIO & PLAYBACK")
+
+                    // Equalizer Navigation Row
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = Color.White.copy(alpha = 0.08f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .clickable(onClick = onOpenEqualizer)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Equalizer & Sound Effects",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "5-band EQ, presets, Bass Boost & 3D Virtualizer",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.60f)
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.Equalizer,
+                                contentDescription = null,
+                                tint = AccentMutedBlue,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
                     SettingsToggleRow(
                         title = "Gapless Playback",
                         subtitle = "Seamless transitions between consecutive tracks",

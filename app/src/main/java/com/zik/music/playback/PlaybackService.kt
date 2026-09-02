@@ -17,6 +17,7 @@ class PlaybackService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
     private lateinit var player: ExoPlayer
+    private var audioEffectsManager: AudioEffectsManager? = null
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
@@ -31,6 +32,17 @@ class PlaybackService : MediaSessionService() {
             .setAudioAttributes(audioAttributes, true) // Handles audio focus automatically
             .setHandleAudioBecomingNoisy(true) // Pauses automatically when headphones are unplugged
             .build()
+
+        audioEffectsManager = AudioEffectsManager(applicationContext).apply {
+            attachAudioSession(player.audioSessionId)
+        }
+
+        // Listen for session ID changes
+        player.addListener(object : Player.Listener {
+            override fun onAudioSessionIdChanged(audioSessionId: Int) {
+                audioEffectsManager?.attachAudioSession(audioSessionId)
+            }
+        })
 
         // Intent to launch MainActivity when clicking the playback notification
         val sessionActivityPendingIntent = PendingIntent.getActivity(
@@ -50,6 +62,8 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        audioEffectsManager?.release()
+        audioEffectsManager = null
         mediaSession?.run {
             player.release()
             release()
