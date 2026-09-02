@@ -1,8 +1,5 @@
 package com.zik.music.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -37,8 +34,6 @@ import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.SurroundSound
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -52,11 +47,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zik.music.playback.EqualizerUiState
@@ -163,15 +158,15 @@ fun EqualizerScreen(
                         Text(
                             text = presetName,
                             fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected && eqState.isEnabled) PureBlack else Color.White,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected && eqState.isEnabled) PureBlack else Color.White.copy(alpha = if (eqState.isEnabled) 0.9f else 0.4f),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // 3. Frequency Response Visualizer Curve
             Surface(
@@ -181,7 +176,7 @@ fun EqualizerScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .height(110.dp)
+                    .height(130.dp)
             ) {
                 Canvas(
                     modifier = Modifier
@@ -190,18 +185,27 @@ fun EqualizerScreen(
                 ) {
                     val width = size.width
                     val height = size.height
-                    val bands = eqState.bandLevels
-                    if (bands.isEmpty()) return@Canvas
+                    val centerY = height / 2f
+                    val bands = if (eqState.bandLevels.isNotEmpty()) eqState.bandLevels else listOf(0, 0, 0, 0, 0)
+
+                    // Draw 0dB reference baseline
+                    drawLine(
+                        color = Color.White.copy(alpha = 0.10f),
+                        start = Offset(0f, centerY),
+                        end = Offset(width, centerY),
+                        strokeWidth = 1.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                    )
 
                     val range = (eqState.maxBandLevel - eqState.minBandLevel).toFloat().coerceAtLeast(1f)
                     val points = bands.mapIndexed { idx, level ->
                         val x = if (bands.size > 1) idx * (width / (bands.size - 1)) else width / 2f
                         val normalized = (level - eqState.minBandLevel) / range
-                        val y = height - (normalized * height)
+                        val y = (height - (normalized * height)).coerceIn(4f, height - 4f)
                         Offset(x, y)
                     }
 
-                    // Draw smooth frequency curve path
+                    // Build smooth cubic bezier curve
                     val curvePath = Path()
                     curvePath.moveTo(points.first().x, points.first().y)
 
@@ -212,7 +216,7 @@ fun EqualizerScreen(
                         curvePath.cubicTo(cx, p0.y, cx, p1.y, p1.x, p1.y)
                     }
 
-                    // Draw filled glowing area under curve
+                    // Fill under curve
                     val fillPath = Path()
                     fillPath.addPath(curvePath)
                     fillPath.lineTo(points.last().x, height)
@@ -223,7 +227,7 @@ fun EqualizerScreen(
                         path = fillPath,
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                (if (eqState.isEnabled) AccentMutedBlue else Color.White).copy(alpha = 0.25f),
+                                (if (eqState.isEnabled) AccentMutedBlue else Color.White).copy(alpha = 0.22f),
                                 Color.Transparent
                             )
                         )
@@ -232,11 +236,11 @@ fun EqualizerScreen(
                     // Draw curve line
                     drawPath(
                         path = curvePath,
-                        color = if (eqState.isEnabled) AccentMutedBlue else Color.White.copy(alpha = 0.5f),
+                        color = if (eqState.isEnabled) AccentMutedBlue else Color.White.copy(alpha = 0.45f),
                         style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                     )
 
-                    // Draw node circles
+                    // Draw frequency band node dots
                     points.forEach { pt ->
                         drawCircle(
                             color = Color.White,
@@ -252,9 +256,9 @@ fun EqualizerScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. Interactive Graphic Equalizer Bands
+            // 4. Interactive Graphic Equalizer 5 Bands
             Surface(
                 shape = RoundedCornerShape(22.dp),
                 color = Color.White.copy(alpha = 0.04f),
@@ -266,7 +270,7 @@ fun EqualizerScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 18.dp)
+                        .padding(horizontal = 16.dp, vertical = 18.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -294,21 +298,25 @@ fun EqualizerScreen(
                             Text(
                                 text = "Flat",
                                 color = if (eqState.isEnabled) AccentMutedBlue else Color.White.copy(alpha = 0.3f),
-                                fontSize = 12.sp
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    val activeBands = if (eqState.bandLevels.isNotEmpty()) eqState.bandLevels else listOf(0, 0, 0, 0, 0)
+                    val activeFreqs = if (eqState.bandFrequencies.isNotEmpty()) eqState.bandFrequencies else listOf(60, 230, 910, 3600, 14000)
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(180.dp),
+                            .height(200.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        eqState.bandLevels.forEachIndexed { bandIndex, levelMillibels ->
-                            val freqHz = eqState.bandFrequencies.getOrElse(bandIndex) { 1000 }
+                        activeBands.forEachIndexed { bandIndex, levelMillibels ->
+                            val freqHz = activeFreqs.getOrElse(bandIndex) { 1000 }
                             val freqLabel = if (freqHz >= 1000) "${freqHz / 1000}k" else "${freqHz}Hz"
                             val gainDb = (levelMillibels / 100f).roundToInt()
 
@@ -318,28 +326,28 @@ fun EqualizerScreen(
                                     .weight(1f)
                                     .fillMaxHeight()
                             ) {
-                                // dB level label
+                                // dB readout at top
                                 Text(
                                     text = if (gainDb > 0) "+$gainDb" else "$gainDb",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (eqState.isEnabled) Color.White else Color.White.copy(alpha = 0.4f)
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (eqState.isEnabled) (if (gainDb != 0) AccentMutedBlue else Color.White) else Color.White.copy(alpha = 0.35f)
                                 )
 
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
 
-                                // Custom Touch-Draggable Vertical Slider Bar
+                                // Touch-Draggable Vertical Slider Track
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .width(28.dp)
+                                        .width(36.dp)
                                         .pointerInput(eqState.isEnabled, bandIndex) {
                                             if (!eqState.isEnabled) return@pointerInput
                                             detectDragGestures { change, _ ->
                                                 change.consume()
                                                 val totalH = size.height.toFloat()
                                                 val touchY = change.position.y.coerceIn(0f, totalH)
-                                                val fraction = 1f - (touchY / totalH)
+                                                val fraction = 1f - (touchY / totalH) // 0 at bottom, 1 at top
                                                 val range = eqState.maxBandLevel - eqState.minBandLevel
                                                 val newLevel = (eqState.minBandLevel + fraction * range).roundToInt()
                                                 onBandLevelChanged(bandIndex, newLevel)
@@ -348,53 +356,67 @@ fun EqualizerScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Canvas(modifier = Modifier.fillMaxSize()) {
-                                        val barW = 4.dp.toPx()
+                                        val barW = 5.dp.toPx()
                                         val centerX = size.width / 2f
                                         val totalH = size.height
+                                        val centerY = totalH / 2f
                                         val range = (eqState.maxBandLevel - eqState.minBandLevel).toFloat().coerceAtLeast(1f)
                                         val normalized = (levelMillibels - eqState.minBandLevel) / range
-                                        val thumbY = totalH - (normalized * totalH)
+                                        val thumbY = (totalH - (normalized * totalH)).coerceIn(8.dp.toPx(), totalH - 8.dp.toPx())
 
                                         // Background Track
                                         drawLine(
-                                            color = Color.White.copy(alpha = 0.15f),
-                                            start = Offset(centerX, 0f),
-                                            end = Offset(centerX, totalH),
+                                            color = Color.White.copy(alpha = 0.12f),
+                                            start = Offset(centerX, 4.dp.toPx()),
+                                            end = Offset(centerX, totalH - 4.dp.toPx()),
                                             strokeWidth = barW,
                                             cap = StrokeCap.Round
                                         )
 
-                                        // Active gain track from center to thumb
-                                        val centerY = totalH / 2f
+                                        // 0dB Center Notch
                                         drawLine(
-                                            color = if (eqState.isEnabled) AccentMutedBlue else Color.White.copy(alpha = 0.4f),
-                                            start = Offset(centerX, centerY),
-                                            end = Offset(centerX, thumbY),
-                                            strokeWidth = barW,
+                                            color = Color.White.copy(alpha = 0.25f),
+                                            start = Offset(centerX - 6.dp.toPx(), centerY),
+                                            end = Offset(centerX + 6.dp.toPx(), centerY),
+                                            strokeWidth = 1.5.dp.toPx(),
                                             cap = StrokeCap.Round
                                         )
 
-                                        // Thumb Scrubber Handle
+                                        // Active Gain Track from Center (0dB) to Thumb
+                                        if (eqState.isEnabled) {
+                                            drawLine(
+                                                color = AccentMutedBlue,
+                                                start = Offset(centerX, centerY),
+                                                end = Offset(centerX, thumbY),
+                                                strokeWidth = barW,
+                                                cap = StrokeCap.Round
+                                            )
+                                        }
+
+                                        // Outer Thumb Ring Glow
                                         drawCircle(
-                                            color = Color.White,
-                                            radius = 7.dp.toPx(),
+                                            color = if (eqState.isEnabled) Color.White else Color.White.copy(alpha = 0.4f),
+                                            radius = 9.dp.toPx(),
                                             center = Offset(centerX, thumbY)
                                         )
+
+                                        // Inner Thumb Center
                                         drawCircle(
-                                            color = if (eqState.isEnabled) AccentMutedBlue else Color.Gray,
-                                            radius = 4.dp.toPx(),
+                                            color = if (eqState.isEnabled) AccentMutedBlue else Color(0xFF2A2E3D),
+                                            radius = 5.dp.toPx(),
                                             center = Offset(centerX, thumbY)
                                         )
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
 
-                                // Frequency Label
+                                // Frequency Label at bottom
                                 Text(
                                     text = freqLabel,
-                                    fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.65f)
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White.copy(alpha = if (eqState.isEnabled) 0.75f else 0.35f)
                                 )
                             }
                         }
@@ -402,7 +424,7 @@ fun EqualizerScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 5. Sound Enhancement Controls (Bass Boost & 3D Virtualizer)
             Column(
@@ -411,7 +433,7 @@ fun EqualizerScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Bass Boost Card
+                // Bass Boost Glass Card
                 Surface(
                     shape = RoundedCornerShape(18.dp),
                     color = Color.White.copy(alpha = 0.04f),
@@ -451,23 +473,19 @@ fun EqualizerScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                        Slider(
+                        // Custom Glass Horizontal Slider
+                        GlassHorizontalSlider(
                             value = eqState.bassBoostStrength.toFloat(),
                             onValueChange = { onBassBoostChanged(it.roundToInt()) },
                             valueRange = 0f..1000f,
-                            enabled = eqState.isEnabled,
-                            colors = SliderDefaults.colors(
-                                thumbColor = Color.White,
-                                activeTrackColor = AccentMutedBlue,
-                                inactiveTrackColor = Color.White.copy(alpha = 0.15f)
-                            )
+                            enabled = eqState.isEnabled
                         )
                     }
                 }
 
-                // Virtualizer (3D Surround) Card
+                // 3D Virtualizer Glass Card
                 Surface(
                     shape = RoundedCornerShape(18.dp),
                     color = Color.White.copy(alpha = 0.04f),
@@ -507,22 +525,91 @@ fun EqualizerScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                        Slider(
+                        // Custom Glass Horizontal Slider
+                        GlassHorizontalSlider(
                             value = eqState.virtualizerStrength.toFloat(),
                             onValueChange = { onVirtualizerChanged(it.roundToInt()) },
                             valueRange = 0f..1000f,
-                            enabled = eqState.isEnabled,
-                            colors = SliderDefaults.colors(
-                                thumbColor = Color.White,
-                                activeTrackColor = AccentMutedBlue,
-                                inactiveTrackColor = Color.White.copy(alpha = 0.15f)
-                            )
+                            enabled = eqState.isEnabled
                         )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun GlassHorizontalSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    enabled: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(32.dp)
+            .pointerInput(enabled, valueRange) {
+                if (!enabled) return@pointerInput
+                detectDragGestures { change, _ ->
+                    change.consume()
+                    val totalW = size.width.toFloat()
+                    val touchX = change.position.x.coerceIn(0f, totalW)
+                    val fraction = touchX / totalW
+                    val range = valueRange.endInclusive - valueRange.start
+                    val newVal = (valueRange.start + fraction * range).coerceIn(valueRange.start, valueRange.endInclusive)
+                    onValueChange(newVal)
+                }
+            },
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val totalW = size.width
+            val totalH = size.height
+            val centerY = totalH / 2f
+            val barH = 6.dp.toPx()
+
+            val range = (valueRange.endInclusive - valueRange.start).coerceAtLeast(1f)
+            val fraction = ((value - valueRange.start) / range).coerceIn(0f, 1f)
+            val thumbX = (fraction * totalW).coerceIn(8.dp.toPx(), totalW - 8.dp.toPx())
+
+            // Inactive Track
+            drawLine(
+                color = Color.White.copy(alpha = 0.10f),
+                start = Offset(4.dp.toPx(), centerY),
+                end = Offset(totalW - 4.dp.toPx(), centerY),
+                strokeWidth = barH,
+                cap = StrokeCap.Round
+            )
+
+            // Active Accent Track
+            if (enabled && fraction > 0.01f) {
+                drawLine(
+                    color = AccentMutedBlue,
+                    start = Offset(4.dp.toPx(), centerY),
+                    end = Offset(thumbX, centerY),
+                    strokeWidth = barH,
+                    cap = StrokeCap.Round
+                )
+            }
+
+            // Outer Thumb Ring
+            drawCircle(
+                color = if (enabled) Color.White else Color.White.copy(alpha = 0.3f),
+                radius = 8.dp.toPx(),
+                center = Offset(thumbX, centerY)
+            )
+
+            // Inner Accent Center
+            drawCircle(
+                color = if (enabled) AccentMutedBlue else Color(0xFF2A2E3D),
+                radius = 4.dp.toPx(),
+                center = Offset(thumbX, centerY)
+            )
         }
     }
 }

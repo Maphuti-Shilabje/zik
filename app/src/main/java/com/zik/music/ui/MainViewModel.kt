@@ -58,7 +58,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val scanner = MediaStoreScanner(application)
     val musicController = MusicController(application)
-    val audioEffectsManager = AudioEffectsManager(application)
+    val audioEffectsManager = AudioEffectsManager.getInstance(application)
 
     val eqUiState: StateFlow<EqualizerUiState> = audioEffectsManager.state
 

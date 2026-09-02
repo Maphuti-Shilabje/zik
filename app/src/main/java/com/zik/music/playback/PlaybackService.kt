@@ -33,7 +33,7 @@ class PlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true) // Pauses automatically when headphones are unplugged
             .build()
 
-        audioEffectsManager = AudioEffectsManager(applicationContext).apply {
+        audioEffectsManager = AudioEffectsManager.getInstance(applicationContext).apply {
             attachAudioSession(player.audioSessionId)
         }
 
