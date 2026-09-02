@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
+import android.media.audiofx.LoudnessEnhancer
 import android.media.audiofx.Virtualizer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,18 +31,19 @@ class AudioEffectsManager private constructor(context: Context) {
     private var equalizer: Equalizer? = null
     private var bassBoost: BassBoost? = null
     private var virtualizer: Virtualizer? = null
+    private var loudnessEnhancer: LoudnessEnhancer? = null
 
     // Standard preset gain curves (in millibels: 100 mB = 1 dB)
     private val defaultPresetCurves = listOf(
-        listOf(0, 0, 0, 0, 0),             // Flat
-        listOf(700, 500, 100, 0, -200),    // Bass Boost
-        listOf(500, 300, -100, 400, 600),   // Rock
-        listOf(-100, 200, 500, 300, -100),  // Pop
-        listOf(300, 200, 100, 200, 400),    // Jazz
-        listOf(600, 400, 0, 300, 500),      // Electronic
-        listOf(-200, 300, 700, 400, 0),     // Vocal
-        listOf(400, 300, -100, 300, 400),   // Classical
-        listOf(0, 0, 0, 0, 0)              // Custom
+        listOf(0, 0, 0, 0, 0),              // Flat
+        listOf(700, 500, 100, 0, -200),     // Bass Boost
+        listOf(500, 300, -100, 400, 600),    // Rock
+        listOf(-100, 200, 500, 300, -100),   // Pop
+        listOf(300, 200, 100, 200, 400),     // Jazz
+        listOf(600, 400, 0, 300, 500),       // Electronic
+        listOf(-200, 300, 700, 400, 0),      // Vocal
+        listOf(400, 300, -100, 300, 400),    // Classical
+        listOf(0, 0, 0, 0, 0)               // Custom
     )
 
     private val _state = MutableStateFlow(
@@ -69,25 +71,40 @@ class AudioEffectsManager private constructor(context: Context) {
     }
 
     fun attachAudioSession(audioSessionId: Int) {
-        if (audioSessionId == 0 && currentSessionId != 0) return
+        if (audioSessionId <= 0) return
+        if (currentSessionId == audioSessionId && equalizer != null) return
         currentSessionId = audioSessionId
 
         releaseNativeEffects()
 
         try {
-            equalizer = Equalizer(0, audioSessionId)
-            bassBoost = BassBoost(0, audioSessionId)
-            virtualizer = Virtualizer(0, audioSessionId)
+            // Priority 100 ensures our app controls the audio session DSP
+            equalizer = Equalizer(100, audioSessionId)
+            bassBoost = BassBoost(100, audioSessionId)
+            virtualizer = Virtualizer(100, audioSessionId)
+            try {
+                loudnessEnhancer = LoudnessEnhancer(audioSessionId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
 
             val isEnabled = _state.value.isEnabled
             equalizer?.enabled = isEnabled
-            bassBoost?.enabled = isEnabled
-            virtualizer?.enabled = isEnabled
+            bassBoost?.enabled = isEnabled && _state.value.bassBoostStrength > 0
+            virtualizer?.enabled = isEnabled && _state.value.virtualizerStrength > 0
+            loudnessEnhancer?.enabled = isEnabled && _state.value.bassBoostStrength > 0
 
-            // Apply Bass Boost & Virtualizer
+            // Apply Bass Boost & Loudness
             if (bassBoost?.strengthSupported == true) {
                 bassBoost?.setStrength(_state.value.bassBoostStrength.toShort())
             }
+            try {
+                loudnessEnhancer?.setTargetGain((_state.value.bassBoostStrength * 0.6f).toInt())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            // Apply Virtualizer
             if (virtualizer?.strengthSupported == true) {
                 virtualizer?.setStrength(_state.value.virtualizerStrength.toShort())
             }
@@ -110,23 +127,9 @@ class AudioEffectsManager private constructor(context: Context) {
                 levels.add(savedLevel)
             }
 
-            // Extract hardware presets if available, or keep rich defaults
-            val numPresets = equalizer?.numberOfPresets?.toInt() ?: 0
-            val presetList = if (numPresets > 0) {
-                val list = mutableListOf<String>()
-                for (p in 0 until numPresets) {
-                    list.add(equalizer?.getPresetName(p.toShort()) ?: "Preset $p")
-                }
-                list.add("Custom")
-                list
-            } else {
-                _state.value.presets
-            }
-
             _state.value = _state.value.copy(
                 bandFrequencies = if (freqs.isNotEmpty()) freqs else _state.value.bandFrequencies,
                 bandLevels = if (levels.isNotEmpty()) levels else _state.value.bandLevels,
-                presets = presetList,
                 minBandLevel = minLevel,
                 maxBandLevel = maxLevel
             )
@@ -138,8 +141,9 @@ class AudioEffectsManager private constructor(context: Context) {
     fun setEnabled(enabled: Boolean) {
         try {
             equalizer?.enabled = enabled
-            bassBoost?.enabled = enabled
-            virtualizer?.enabled = enabled
+            bassBoost?.enabled = enabled && _state.value.bassBoostStrength > 0
+            virtualizer?.enabled = enabled && _state.value.virtualizerStrength > 0
+            loudnessEnhancer?.enabled = enabled && _state.value.bassBoostStrength > 0
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -175,9 +179,12 @@ class AudioEffectsManager private constructor(context: Context) {
     fun setBassBoost(strength: Int) {
         val clamped = strength.coerceIn(0, 1000)
         try {
+            bassBoost?.enabled = _state.value.isEnabled && clamped > 0
             if (bassBoost?.strengthSupported == true) {
                 bassBoost?.setStrength(clamped.toShort())
             }
+            loudnessEnhancer?.enabled = _state.value.isEnabled && clamped > 0
+            loudnessEnhancer?.setTargetGain((clamped * 0.6f).toInt())
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -188,6 +195,7 @@ class AudioEffectsManager private constructor(context: Context) {
     fun setVirtualizer(strength: Int) {
         val clamped = strength.coerceIn(0, 1000)
         try {
+            virtualizer?.enabled = _state.value.isEnabled && clamped > 0
             if (virtualizer?.strengthSupported == true) {
                 virtualizer?.setStrength(clamped.toShort())
             }
@@ -199,17 +207,7 @@ class AudioEffectsManager private constructor(context: Context) {
     }
 
     fun usePreset(presetIndex: Int) {
-        val numPresets = equalizer?.numberOfPresets?.toInt() ?: 0
-
-        val newLevels = if (presetIndex in 0 until numPresets) {
-            try {
-                equalizer?.usePreset(presetIndex.toShort())
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            val numBands = equalizer?.numberOfBands?.toInt() ?: _state.value.bandLevels.size
-            (0 until numBands).map { equalizer?.getBandLevel(it.toShort())?.toInt() ?: 0 }
-        } else if (presetIndex in defaultPresetCurves.indices) {
+        val newLevels = if (presetIndex in defaultPresetCurves.indices) {
             val curve = defaultPresetCurves[presetIndex]
             curve.forEachIndexed { bandIdx, lvl ->
                 try {
@@ -234,9 +232,26 @@ class AudioEffectsManager private constructor(context: Context) {
     }
 
     fun resetToFlat() {
-        usePreset(0) // 0 is Flat
-        setBassBoost(0)
-        setVirtualizer(0)
+        // Guaranteed direct flattening to 0 dB across all bands
+        val numBands = _state.value.bandLevels.size
+        val flatLevels = List(numBands) { 0 }
+        
+        flatLevels.forEachIndexed { bandIdx, lvl ->
+            try {
+                equalizer?.setBandLevel(bandIdx.toShort(), lvl.toShort())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        val editor = prefs.edit()
+        flatLevels.forEachIndexed { idx, lvl -> editor.putInt("eq_band_$idx", lvl) }
+        editor.putInt("eq_preset", 0).apply() // 0 is Flat
+
+        _state.value = _state.value.copy(
+            bandLevels = flatLevels,
+            currentPreset = 0
+        )
     }
 
     private fun releaseNativeEffects() {
@@ -244,12 +259,14 @@ class AudioEffectsManager private constructor(context: Context) {
             equalizer?.release()
             bassBoost?.release()
             virtualizer?.release()
+            loudnessEnhancer?.release()
         } catch (e: Exception) {
             e.printStackTrace()
         }
         equalizer = null
         bassBoost = null
         virtualizer = null
+        loudnessEnhancer = null
     }
 
     fun release() {

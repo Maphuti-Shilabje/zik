@@ -37,10 +37,26 @@ class PlaybackService : MediaSessionService() {
             attachAudioSession(player.audioSessionId)
         }
 
-        // Listen for session ID changes
+        // Listen for session ID changes and playback initialization
         player.addListener(object : Player.Listener {
             override fun onAudioSessionIdChanged(audioSessionId: Int) {
-                audioEffectsManager?.attachAudioSession(audioSessionId)
+                if (audioSessionId > 0) {
+                    audioEffectsManager?.attachAudioSession(audioSessionId)
+                }
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                val sessionId = player.audioSessionId
+                if (sessionId > 0) {
+                    audioEffectsManager?.attachAudioSession(sessionId)
+                }
+            }
+
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                val sessionId = player.audioSessionId
+                if (sessionId > 0) {
+                    audioEffectsManager?.attachAudioSession(sessionId)
+                }
             }
         })
 
