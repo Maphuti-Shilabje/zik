@@ -12,6 +12,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.zik.music.MainActivity
+import com.zik.music.model.Song
+import com.zik.music.widget.ZikMusicWidgetProvider
 
 class PlaybackService : MediaSessionService() {
 
@@ -37,7 +39,7 @@ class PlaybackService : MediaSessionService() {
             attachAudioSession(player.audioSessionId)
         }
 
-        // Listen for session ID changes and playback initialization
+        // Listen for session ID changes, playback events, and widget synchronization
         player.addListener(object : Player.Listener {
             override fun onAudioSessionIdChanged(audioSessionId: Int) {
                 if (audioSessionId > 0) {
@@ -50,6 +52,11 @@ class PlaybackService : MediaSessionService() {
                 if (sessionId > 0) {
                     audioEffectsManager?.attachAudioSession(sessionId)
                 }
+                updateWidget()
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                updateWidget()
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -57,6 +64,7 @@ class PlaybackService : MediaSessionService() {
                 if (sessionId > 0) {
                     audioEffectsManager?.attachAudioSession(sessionId)
                 }
+                updateWidget()
             }
         })
 
@@ -71,6 +79,62 @@ class PlaybackService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, player)
             .setSessionActivity(sessionActivityPendingIntent)
             .build()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ZikMusicWidgetProvider.ACTION_PLAY_PAUSE -> {
+                if (player.isPlaying) {
+                    player.pause()
+                } else {
+                    if (player.playbackState == Player.STATE_IDLE) {
+                        player.prepare()
+                    }
+                    player.play()
+                }
+                updateWidget()
+            }
+            ZikMusicWidgetProvider.ACTION_NEXT -> {
+                if (player.hasNextMediaItem()) {
+                    player.seekToNextMediaItem()
+                }
+                updateWidget()
+            }
+            ZikMusicWidgetProvider.ACTION_PREV -> {
+                if (player.currentPosition > 3000) {
+                    player.seekTo(0)
+                } else if (player.hasPreviousMediaItem()) {
+                    player.seekToPreviousMediaItem()
+                } else {
+                    player.seekTo(0)
+                }
+                updateWidget()
+            }
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
+    private fun updateWidget() {
+        val currentSong = currentSongFromPlayer()
+        ZikMusicWidgetProvider.updateAllWidgets(applicationContext, currentSong, player.isPlaying)
+    }
+
+    private fun currentSongFromPlayer(): Song? {
+        val item = player.currentMediaItem ?: return null
+        val meta = item.mediaMetadata
+        val extras = meta.extras
+        return Song(
+            id = item.mediaId.toLongOrNull() ?: 0L,
+            title = meta.title?.toString() ?: "Unknown Title",
+            artist = meta.artist?.toString() ?: "Unknown Artist",
+            album = meta.albumTitle?.toString() ?: "Unknown Album",
+            albumId = extras?.getLong("albumId") ?: 0L,
+            durationMs = extras?.getLong("durationMs") ?: player.duration.coerceAtLeast(0L),
+            contentUriString = extras?.getString("contentUri") ?: "",
+            filePath = extras?.getString("filePath") ?: "",
+            folderName = extras?.getString("folderName") ?: "",
+            albumArtUriString = meta.artworkUri?.toString()
+        )
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
