@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -52,6 +53,7 @@ import com.zik.music.ui.theme.SurfaceLevel2
 fun SettingsScreen(
     onRescanLibrary: () -> Unit,
     onOpenEqualizer: () -> Unit = {},
+    onOpenSleepTimer: () -> Unit = {},
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -143,6 +145,47 @@ fun SettingsScreen(
                                 contentDescription = null,
                                 tint = AccentMutedBlue,
                                 modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
+                    // Sleep Timer Navigation Row
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = Color.White.copy(alpha = 0.08f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .clickable(onClick = onOpenSleepTimer)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Sleep Timer",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Auto-pause with gradual volume fade-out",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.60f)
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.Bedtime,
+                                contentDescription = null,
+                                tint = AccentMutedBlue,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }

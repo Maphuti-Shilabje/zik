@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.zik.music.ui.components.ExpandedPlayer
 import com.zik.music.ui.components.MiniPlayer
+import com.zik.music.ui.components.SleepTimerSheet
 import com.zik.music.ui.screens.EqualizerScreen
 import com.zik.music.ui.screens.LibraryScreen
 import com.zik.music.ui.screens.SettingsScreen
@@ -41,13 +42,15 @@ fun MainScreen(
     val uiState by viewModel.uiState.collectAsState()
     val playerState by viewModel.playerState.collectAsState()
     val eqState by viewModel.eqUiState.collectAsState()
+    val sleepTimerState by viewModel.sleepTimerState.collectAsState()
 
     // Handle back button hierarchically
     BackHandler(
-        enabled = uiState.isEqualizerOpen || uiState.isSettingsOpen || uiState.isSelectionMode || 
-                  uiState.isPlayerExpanded || uiState.selectedFolder != null
+        enabled = uiState.isSleepTimerOpen || uiState.isEqualizerOpen || uiState.isSettingsOpen || 
+                  uiState.isSelectionMode || uiState.isPlayerExpanded || uiState.selectedFolder != null
     ) {
         when {
+            uiState.isSleepTimerOpen -> viewModel.closeSleepTimer()
             uiState.isEqualizerOpen -> viewModel.closeEqualizer()
             uiState.isSettingsOpen -> viewModel.closeSettings()
             uiState.isSelectionMode -> viewModel.clearSelection()
@@ -151,6 +154,8 @@ fun MainScreen(
                     onRemoveQueueIndex = { viewModel.removeQueueItem(it) },
                     onClearUpcomingQueue = { viewModel.clearUpcomingQueue() },
                     onOpenEqualizer = { viewModel.openEqualizer() },
+                    onOpenSleepTimer = { viewModel.openSleepTimer() },
+                    isSleepTimerActive = sleepTimerState.isActive,
                     onCollapse = { viewModel.setPlayerExpanded(false) }
                 )
             }
@@ -164,6 +169,7 @@ fun MainScreen(
                 SettingsScreen(
                     onRescanLibrary = { viewModel.loadLibrary() },
                     onOpenEqualizer = { viewModel.openEqualizer() },
+                    onOpenSleepTimer = { viewModel.openSleepTimer() },
                     onBack = { viewModel.closeSettings() }
                 )
             }
@@ -183,6 +189,28 @@ fun MainScreen(
                     onPresetSelected = { viewModel.setEqPreset(it) },
                     onResetToFlat = { viewModel.resetEqToFlat() },
                     onBack = { viewModel.closeEqualizer() }
+                )
+            }
+
+            // Sleep Timer Bottom Sheet Modal
+            AnimatedVisibility(
+                visible = uiState.isSleepTimerOpen,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                SleepTimerSheet(
+                    timerState = sleepTimerState,
+                    onStartTimer = {
+                        viewModel.startSleepTimer(it)
+                        viewModel.closeSleepTimer()
+                    },
+                    onStartEndOfTrack = {
+                        viewModel.startEndOfTrackSleepTimer()
+                        viewModel.closeSleepTimer()
+                    },
+                    onCancelTimer = { viewModel.cancelSleepTimer() },
+                    onClose = { viewModel.closeSleepTimer() }
                 )
             }
         }

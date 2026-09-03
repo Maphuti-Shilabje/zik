@@ -218,6 +218,15 @@ class MusicController(private val context: Context) {
         updateStateFromPlayer()
     }
 
+    fun pause() {
+        mediaController?.pause()
+        updateStateFromPlayer()
+    }
+
+    fun setVolume(volume: Float) {
+        mediaController?.volume = volume.coerceIn(0f, 1f)
+    }
+
     fun seekTo(positionMs: Long) {
         mediaController?.seekTo(positionMs)
         _playerState.value = _playerState.value.copy(currentPositionMs = positionMs)

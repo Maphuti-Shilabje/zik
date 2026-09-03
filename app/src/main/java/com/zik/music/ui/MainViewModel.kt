@@ -12,6 +12,8 @@ import com.zik.music.playback.AudioEffectsManager
 import com.zik.music.playback.EqualizerUiState
 import com.zik.music.playback.MusicController
 import com.zik.music.playback.PlayerState
+import com.zik.music.playback.SleepTimerManager
+import com.zik.music.playback.SleepTimerState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +49,7 @@ data class LibraryUiState(
     val isPlayerExpanded: Boolean = false,
     val isSettingsOpen: Boolean = false,
     val isEqualizerOpen: Boolean = false,
+    val isSleepTimerOpen: Boolean = false,
     val activeLyrics: List<LyricLine> = emptyList(),
     val selectedSongIds: Set<Long> = emptySet(),
     val hasPermission: Boolean = false
@@ -59,8 +62,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val scanner = MediaStoreScanner(application)
     val musicController = MusicController(application)
     val audioEffectsManager = AudioEffectsManager.getInstance(application)
+    val sleepTimerManager = SleepTimerManager(musicController)
 
     val eqUiState: StateFlow<EqualizerUiState> = audioEffectsManager.state
+    val sleepTimerState: StateFlow<SleepTimerState> = sleepTimerManager.state
 
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
@@ -271,8 +276,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         audioEffectsManager.resetToFlat()
     }
 
+    fun openSleepTimer() {
+        _uiState.value = _uiState.value.copy(isSleepTimerOpen = true)
+    }
+
+    fun closeSleepTimer() {
+        _uiState.value = _uiState.value.copy(isSleepTimerOpen = false)
+    }
+
+    fun startSleepTimer(minutes: Int) {
+        sleepTimerManager.startTimer(minutes)
+    }
+
+    fun startEndOfTrackSleepTimer() {
+        val duration = playerState.value.durationMs
+        val currentPos = playerState.value.currentPositionMs
+        sleepTimerManager.startEndOfTrackTimer(duration, currentPos)
+    }
+
+    fun cancelSleepTimer() {
+        sleepTimerManager.cancelTimer()
+    }
+
     override fun onCleared() {
         super.onCleared()
+        sleepTimerManager.cancelTimer()
         audioEffectsManager.release()
         musicController.release()
     }
