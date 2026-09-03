@@ -36,6 +36,21 @@ You can download and install the Zik APK directly on any Android device without 
 
 ---
 
+## Interface Showcase
+
+<p align="center">
+  <img src="docs/screenshots/01_library_home.jpg" width="31%" alt="Library Home"/>
+  <img src="docs/screenshots/02_now_playing.jpg" width="31%" alt="Now Playing"/>
+  <img src="docs/screenshots/03_queue_sheet.jpg" width="31%" alt="Playback Queue"/>
+</p>
+<p align="center">
+  <img src="docs/screenshots/04_equalizer.jpg" width="31%" alt="Equalizer and Audio FX"/>
+  <img src="docs/screenshots/05_sleep_timer.jpg" width="31%" alt="Sleep Timer"/>
+  <img src="docs/screenshots/06_settings.jpg" width="31%" alt="Settings"/>
+</p>
+
+---
+
 ## Key Features
 
 ### 100% Air-Gapped Privacy & Offline-First
