@@ -3,6 +3,7 @@ package com.zik.music.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,12 +72,7 @@ fun SettingsScreen(
             .background(PureBlack)
             .statusBarsPadding()
             .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                        event.changes.forEach { it.consume() }
-                    }
-                }
+                detectTapGestures { }
             }
     ) {
         Column(modifier = Modifier.fillMaxSize()) {

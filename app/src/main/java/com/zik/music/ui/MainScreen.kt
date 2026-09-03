@@ -118,44 +118,27 @@ fun MainScreen(
                 }
             }
         } else {
-            // Main Library View (with touch gating when any overlay is active)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (isAnyOverlayActive) {
-                            Modifier.pointerInput(Unit) {
-                                awaitPointerEventScope {
-                                    while (true) {
-                                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                                        event.changes.forEach { it.consume() }
-                                    }
-                                }
-                            }
-                        } else Modifier
-                    )
-            ) {
-                LibraryScreen(
-                    uiState = uiState,
-                    playerState = playerState,
-                    onTabSelected = { viewModel.selectTab(it) },
-                    onReorderTabs = { from, to -> viewModel.reorderTabs(from, to) },
-                    onFolderSelected = { viewModel.openFolder(it) },
-                    onCloseFolder = { viewModel.closeFolder() },
-                    onSongSelected = { song, queue -> viewModel.playSong(song, queue) },
-                    onToggleSongSelection = { viewModel.toggleSongSelection(it) },
-                    onSelectAll = { viewModel.selectAll(it) },
-                    onClearSelection = { viewModel.clearSelection() },
-                    onPlaySelectedNext = { viewModel.playSelectedNext() },
-                    onAddSelectedToQueue = { viewModel.addSelectedToQueue() },
-                    onPlaySingleSongNext = { viewModel.playSingleSongNext(it) },
-                    onAddSingleSongToQueue = { viewModel.addSingleSongToQueue(it) },
-                    onToggleFavorite = { viewModel.toggleFavorite(it) },
-                    onInspectSong = { viewModel.inspectSong(it) },
-                    onSearchQueryChanged = { viewModel.updateSearchQuery(it) },
-                    onOpenSettings = { viewModel.openSettings() }
-                )
-            }
+            // Main Library View
+            LibraryScreen(
+                uiState = uiState,
+                playerState = playerState,
+                onTabSelected = { viewModel.selectTab(it) },
+                onReorderTabs = { from, to -> viewModel.reorderTabs(from, to) },
+                onFolderSelected = { viewModel.openFolder(it) },
+                onCloseFolder = { viewModel.closeFolder() },
+                onSongSelected = { song, queue -> viewModel.playSong(song, queue) },
+                onToggleSongSelection = { viewModel.toggleSongSelection(it) },
+                onSelectAll = { viewModel.selectAll(it) },
+                onClearSelection = { viewModel.clearSelection() },
+                onPlaySelectedNext = { viewModel.playSelectedNext() },
+                onAddSelectedToQueue = { viewModel.addSelectedToQueue() },
+                onPlaySingleSongNext = { viewModel.playSingleSongNext(it) },
+                onAddSingleSongToQueue = { viewModel.addSingleSongToQueue(it) },
+                onToggleFavorite = { viewModel.toggleFavorite(it) },
+                onInspectSong = { viewModel.inspectSong(it) },
+                onSearchQueryChanged = { viewModel.updateSearchQuery(it) },
+                onOpenSettings = { viewModel.openSettings() }
+            )
 
             // Persistent Mini-Player Bar at bottom
             if (playerState.currentSong != null && !uiState.isPlayerExpanded) {

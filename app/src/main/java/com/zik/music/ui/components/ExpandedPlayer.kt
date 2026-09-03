@@ -12,6 +12,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -118,12 +119,7 @@ fun ExpandedPlayer(
             .fillMaxSize()
             .background(PureBlack)
             .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                        event.changes.forEach { it.consume() }
-                    }
-                }
+                detectTapGestures { }
             }
     ) {
         // 1. Full-bleed Immersive Background Artwork with Soft Scrim
