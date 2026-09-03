@@ -1,0 +1,12 @@
+<svg viewBox="0 0 260 160" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(30,30)">
+    <rect x="-24" y="-24" width="210" height="100" rx="18" fill="#FFFFFF"/>
+    <text x="16" y="42" fill="#000000" font-family="Helvetica, Arial, sans-serif" font-size="52" font-weight="800" letter-spacing="-1">Z</text>
+    <rect x="72" y="-2" width="8" height="26" rx="4" fill="#000000"/>
+    <text x="94" y="42" fill="#000000" font-family="Helvetica, Arial, sans-serif" font-size="52" font-weight="800" letter-spacing="-1">k</text>
+    <g transform="translate(76,-16)">
+      <path d="M -12,0 L -7,0 L -4.5,-6 L -0.7,6 L 3,-4 L 6,0 L 12,0"
+            stroke="#357ABD" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+  </g>
+</svg>

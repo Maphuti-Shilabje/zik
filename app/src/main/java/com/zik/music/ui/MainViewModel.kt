@@ -3,6 +3,7 @@ package com.zik.music.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.zik.music.data.AppPreferences
 import com.zik.music.data.AudioDetails
 import com.zik.music.data.AudioMetadataExtractor
 import com.zik.music.data.LrcParser
@@ -18,12 +19,9 @@ import com.zik.music.playback.SleepTimerManager
 import com.zik.music.playback.SleepTimerState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.io.File
 
 enum class LibraryTab(val title: String, val isFavorite: Boolean = false) {
     FOLDERS("Folders"),
@@ -45,7 +43,8 @@ data class LibraryUiState(
         LibraryTab.FOLDERS,
         LibraryTab.FAVORITES,
         LibraryTab.SONGS,
-        LibraryTab.ALBUMS
+        LibraryTab.ALBUMS,
+        LibraryTab.ARTISTS
     ),
     val favoriteSongIds: Set<Long> = emptySet(),
     val searchQuery: String = "",
@@ -56,13 +55,19 @@ data class LibraryUiState(
     val inspectedSongDetails: AudioDetails? = null,
     val activeLyrics: List<LyricLine> = emptyList(),
     val selectedSongIds: Set<Long> = emptySet(),
-    val hasPermission: Boolean = false
+    val hasPermission: Boolean = false,
+    val gaplessEnabled: Boolean = true,
+    val pauseOnUnplug: Boolean = true,
+    val filterShortAudio: Boolean = true,
+    val smartFilenameCleaner: Boolean = true,
+    val folderHierarchyFallback: Boolean = true
 ) {
     val isSelectionMode: Boolean get() = selectedSongIds.isNotEmpty()
 }
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val appPrefs = AppPreferences(application)
     private val scanner = MediaStoreScanner(application)
     val musicController = MusicController(application)
     val audioEffectsManager = AudioEffectsManager.getInstance(application)
@@ -71,7 +76,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val eqUiState: StateFlow<EqualizerUiState> = audioEffectsManager.state
     val sleepTimerState: StateFlow<SleepTimerState> = sleepTimerManager.state
 
-    private val _uiState = MutableStateFlow(LibraryUiState())
+    private val _uiState = MutableStateFlow(
+        LibraryUiState(
+            tabOrder = appPrefs.getTabOrder(),
+            favoriteSongIds = appPrefs.getFavoriteSongIds(),
+            gaplessEnabled = appPrefs.gaplessEnabled,
+            pauseOnUnplug = appPrefs.pauseOnUnplug,
+            filterShortAudio = appPrefs.filterShortAudio,
+            smartFilenameCleaner = appPrefs.smartFilenameCleaner,
+            folderHierarchyFallback = appPrefs.folderHierarchyFallback
+        )
+    )
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     val playerState: StateFlow<PlayerState> = musicController.playerState
@@ -88,6 +103,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             current + songId
         }
         _uiState.value = _uiState.value.copy(favoriteSongIds = updated)
+        appPrefs.setFavoriteSongIds(updated)
     }
 
     fun reorderTabs(fromIndex: Int, toIndex: Int) {
@@ -96,7 +112,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val item = current.removeAt(fromIndex)
             current.add(toIndex, item)
             _uiState.value = _uiState.value.copy(tabOrder = current)
+            appPrefs.setTabOrder(current)
         }
+    }
+
+    fun setGaplessEnabled(enabled: Boolean) {
+        appPrefs.gaplessEnabled = enabled
+        _uiState.value = _uiState.value.copy(gaplessEnabled = enabled)
+    }
+
+    fun setPauseOnUnplug(enabled: Boolean) {
+        appPrefs.pauseOnUnplug = enabled
+        _uiState.value = _uiState.value.copy(pauseOnUnplug = enabled)
+    }
+
+    fun setFilterShortAudio(enabled: Boolean) {
+        appPrefs.filterShortAudio = enabled
+        _uiState.value = _uiState.value.copy(filterShortAudio = enabled)
+        loadLibrary()
+    }
+
+    fun setSmartFilenameCleaner(enabled: Boolean) {
+        appPrefs.smartFilenameCleaner = enabled
+        _uiState.value = _uiState.value.copy(smartFilenameCleaner = enabled)
+        loadLibrary()
+    }
+
+    fun setFolderHierarchyFallback(enabled: Boolean) {
+        appPrefs.folderHierarchyFallback = enabled
+        _uiState.value = _uiState.value.copy(folderHierarchyFallback = enabled)
+        loadLibrary()
     }
 
     fun onPermissionGranted() {
@@ -107,7 +152,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun loadLibrary() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            val songs = scanner.scanSongs()
+            val songs = scanner.scanSongs(
+                filterShortAudio = _uiState.value.filterShortAudio,
+                smartFilenameCleaner = _uiState.value.smartFilenameCleaner,
+                folderHierarchyFallback = _uiState.value.folderHierarchyFallback
+            )
             val folders = scanner.groupIntoFolders(songs)
             val albums = songs.groupBy { it.album.ifBlank { "Unknown Album" } }
             val artists = songs.groupBy { it.artist.ifBlank { "Unknown Artist" } }
@@ -119,6 +168,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 albums = albums,
                 artists = artists
             )
+
+            // Restore last played state if no song is currently playing/loaded
+            if (playerState.value.currentSong == null && songs.isNotEmpty()) {
+                val lastSongId = appPrefs.getLastPlayedSongId()
+                val lastSong = songs.find { it.id == lastSongId } ?: songs.firstOrNull()
+                if (lastSong != null) {
+                    val lastQueueIds = appPrefs.getLastPlayedQueueIds().toSet()
+                    val restoredQueue = if (lastQueueIds.isNotEmpty()) {
+                        songs.filter { it.id in lastQueueIds }
+                    } else {
+                        songs
+                    }
+                    val lastPosition = appPrefs.getLastPlayedPositionMs()
+                    val lastIndex = appPrefs.getLastPlayedQueueIndex().coerceIn(0, (restoredQueue.size - 1).coerceAtLeast(0))
+                    musicController.restoreLastState(lastSong, restoredQueue, lastPosition, lastIndex)
+                }
+            }
         }
     }
 

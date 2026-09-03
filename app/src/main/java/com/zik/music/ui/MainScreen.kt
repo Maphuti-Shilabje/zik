@@ -191,6 +191,16 @@ fun MainScreen(
                 exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
             ) {
                 SettingsScreen(
+                    gaplessEnabled = uiState.gaplessEnabled,
+                    onToggleGapless = { viewModel.setGaplessEnabled(it) },
+                    pauseOnUnplug = uiState.pauseOnUnplug,
+                    onTogglePauseOnUnplug = { viewModel.setPauseOnUnplug(it) },
+                    filterShortAudio = uiState.filterShortAudio,
+                    onToggleFilterShortAudio = { viewModel.setFilterShortAudio(it) },
+                    smartFilenameCleaner = uiState.smartFilenameCleaner,
+                    onToggleSmartFilenameCleaner = { viewModel.setSmartFilenameCleaner(it) },
+                    folderHierarchyFallback = uiState.folderHierarchyFallback,
+                    onToggleFolderHierarchyFallback = { viewModel.setFolderHierarchyFallback(it) },
                     onRescanLibrary = { viewModel.loadLibrary() },
                     onOpenEqualizer = { viewModel.openEqualizer() },
                     onOpenSleepTimer = { viewModel.openSleepTimer() },

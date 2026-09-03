@@ -1,0 +1,17 @@
+<svg viewBox="0 0 220 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#357ABD"/>
+      <stop offset="100%" stop-color="#4A90D9"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(30,42)">
+    <text x="16" y="42" fill="#FFFFFF" font-family="Helvetica, Arial, sans-serif" font-size="52" font-weight="800" letter-spacing="-1">Z</text>
+    <rect x="72" y="-2" width="8" height="26" rx="4" fill="#FFFFFF"/>
+    <text x="94" y="42" fill="#FFFFFF" font-family="Helvetica, Arial, sans-serif" font-size="52" font-weight="800" letter-spacing="-1">k</text>
+    <g transform="translate(76,-16)">
+      <path d="M -12,0 L -7,0 L -4.5,-6 L -0.7,6 L 3,-4 L 6,0 L 12,0"
+            stroke="url(#waveGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+  </g>
+</svg>

@@ -2,8 +2,6 @@ package com.zik.music.playback
 
 import android.content.ComponentName
 import android.content.Context
-import android.net.Uri
-import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -11,6 +9,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import com.zik.music.data.AppPreferences
 import com.zik.music.model.Song
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +34,7 @@ data class PlayerState(
 
 class MusicController(private val context: Context) {
 
+    private val appPrefs = AppPreferences(context)
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var mediaController: MediaController? = null
@@ -111,6 +111,28 @@ class MusicController(private val context: Context) {
             repeatMode = player.repeatMode,
             queue = currentQueue,
             queueIndex = currentMediaIndex
+        )
+
+        if (activeSong != null) {
+            appPrefs.saveLastPlaybackState(
+                songId = activeSong.id,
+                positionMs = position,
+                queueIds = currentQueue.map { it.id },
+                queueIndex = currentMediaIndex
+            )
+        }
+    }
+
+    fun restoreLastState(song: Song, queue: List<Song>, positionMs: Long, queueIndex: Int) {
+        if (mediaController?.isPlaying == true || (mediaController?.mediaItemCount ?: 0) > 0) return
+        currentQueue = queue
+        _playerState.value = _playerState.value.copy(
+            currentSong = song,
+            isPlaying = false,
+            currentPositionMs = positionMs,
+            durationMs = song.durationMs,
+            queue = queue,
+            queueIndex = queueIndex
         )
     }
 
@@ -210,10 +232,19 @@ class MusicController(private val context: Context) {
         if (player.isPlaying) {
             player.pause()
         } else {
-            if (player.playbackState == Player.STATE_IDLE) {
+            if (player.mediaItemCount == 0 && currentQueue.isNotEmpty()) {
+                val mediaItems = currentQueue.map { createMediaItem(it) }
+                val startIndex = _playerState.value.queueIndex.coerceIn(0, currentQueue.lastIndex)
+                val startPos = _playerState.value.currentPositionMs
+                player.setMediaItems(mediaItems, startIndex, startPos)
                 player.prepare()
+                player.play()
+            } else {
+                if (player.playbackState == Player.STATE_IDLE) {
+                    player.prepare()
+                }
+                player.play()
             }
-            player.play()
         }
         updateStateFromPlayer()
     }
@@ -228,7 +259,10 @@ class MusicController(private val context: Context) {
     }
 
     fun seekTo(positionMs: Long) {
-        mediaController?.seekTo(positionMs)
+        val player = mediaController
+        if (player != null && player.mediaItemCount > 0) {
+            player.seekTo(positionMs)
+        }
         _playerState.value = _playerState.value.copy(currentPositionMs = positionMs)
     }
 

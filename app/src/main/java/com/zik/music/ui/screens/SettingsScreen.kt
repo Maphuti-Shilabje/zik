@@ -28,44 +28,40 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zik.music.ui.theme.AccentMutedBlue
 import com.zik.music.ui.theme.PureBlack
-import com.zik.music.ui.theme.SurfaceLevel2
 
 @Composable
 fun SettingsScreen(
+    gaplessEnabled: Boolean = true,
+    onToggleGapless: (Boolean) -> Unit = {},
+    pauseOnUnplug: Boolean = true,
+    onTogglePauseOnUnplug: (Boolean) -> Unit = {},
+    filterShortAudio: Boolean = true,
+    onToggleFilterShortAudio: (Boolean) -> Unit = {},
+    smartFilenameCleaner: Boolean = true,
+    onToggleSmartFilenameCleaner: (Boolean) -> Unit = {},
+    folderHierarchyFallback: Boolean = true,
+    onToggleFolderHierarchyFallback: (Boolean) -> Unit = {},
     onRescanLibrary: () -> Unit,
     onOpenEqualizer: () -> Unit = {},
     onOpenSleepTimer: () -> Unit = {},
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var gaplessEnabled by remember { mutableStateOf(true) }
-    var pauseOnUnplug by remember { mutableStateOf(true) }
-    var filterShortAudio by remember { mutableStateOf(true) }
-    var smartFilenameCleaner by remember { mutableStateOf(true) }
-    var folderHierarchyFallback by remember { mutableStateOf(true) }
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -141,7 +137,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "5-band EQ, presets, Bass Boost & 3D Virtualizer",
+                                    text = "5-band curve, Bass Boost, 3D audio, & presets",
                                     fontSize = 12.sp,
                                     color = Color.White.copy(alpha = 0.60f)
                                 )
@@ -150,7 +146,7 @@ fun SettingsScreen(
                                 imageVector = Icons.Default.Equalizer,
                                 contentDescription = null,
                                 tint = AccentMutedBlue,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
@@ -200,13 +196,13 @@ fun SettingsScreen(
                         title = "Gapless Playback",
                         subtitle = "Seamless transitions between consecutive tracks",
                         checked = gaplessEnabled,
-                        onCheckedChange = { gaplessEnabled = it }
+                        onCheckedChange = onToggleGapless
                     )
                     SettingsToggleRow(
                         title = "Pause on Disconnect",
                         subtitle = "Auto-pause playback when headphones are unplugged",
                         checked = pauseOnUnplug,
-                        onCheckedChange = { pauseOnUnplug = it }
+                        onCheckedChange = onTogglePauseOnUnplug
                     )
                 }
 
@@ -217,7 +213,7 @@ fun SettingsScreen(
                         title = "Filter Short Audio (< 15s)",
                         subtitle = "Automatically exclude notification tones and voice notes",
                         checked = filterShortAudio,
-                        onCheckedChange = { filterShortAudio = it }
+                        onCheckedChange = onToggleFilterShortAudio
                     )
 
                     // Rescan Action Card
@@ -274,13 +270,13 @@ fun SettingsScreen(
                         title = "Smart Filename Cleaner",
                         subtitle = "Strips [y2mate], bitrates, and video tags from song names",
                         checked = smartFilenameCleaner,
-                        onCheckedChange = { smartFilenameCleaner = it }
+                        onCheckedChange = onToggleSmartFilenameCleaner
                     )
                     SettingsToggleRow(
                         title = "Folder Hierarchy Fallback",
                         subtitle = "Uses folder names when album/artist tags are missing",
                         checked = folderHierarchyFallback,
-                        onCheckedChange = { folderHierarchyFallback = it }
+                        onCheckedChange = onToggleFolderHierarchyFallback
                     )
                 }
 
@@ -361,27 +357,30 @@ fun SettingsToggleRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.White
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = Color.White.copy(alpha = 0.65f)
+                    color = Color.White.copy(alpha = 0.60f)
                 )
             }
+            Spacer(modifier = Modifier.size(12.dp))
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = PureBlack,
                     checkedTrackColor = AccentMutedBlue,
-                    uncheckedThumbColor = Color.White.copy(alpha = 0.5f),
-                    uncheckedTrackColor = Color.White.copy(alpha = 0.15f)
+                    uncheckedThumbColor = Color.White.copy(alpha = 0.60f),
+                    uncheckedTrackColor = Color.White.copy(alpha = 0.10f),
+                    uncheckedBorderColor = Color.White.copy(alpha = 0.25f)
                 )
             )
         }

@@ -56,8 +56,8 @@ fun MiniPlayer(
 
     Surface(
         shape = RoundedCornerShape(26.dp),
-        color = Color.Transparent,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+        color = PureBlack,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)

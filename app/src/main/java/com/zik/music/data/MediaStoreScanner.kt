@@ -15,7 +15,11 @@ class MediaStoreScanner(private val context: Context) {
 
     private val albumArtBaseUri = Uri.parse("content://media/external/audio/albumart")
 
-    suspend fun scanSongs(): List<Song> = withContext(Dispatchers.IO) {
+    suspend fun scanSongs(
+        filterShortAudio: Boolean = true,
+        smartFilenameCleaner: Boolean = true,
+        folderHierarchyFallback: Boolean = true
+    ): List<Song> = withContext(Dispatchers.IO) {
         val songs = mutableListOf<Song>()
 
         val projection = arrayOf(
@@ -30,8 +34,12 @@ class MediaStoreScanner(private val context: Context) {
             MediaStore.Audio.Media.YEAR
         )
 
-        // Ignore short audio clips (< 15 seconds) like ringtones or WhatsApp audio
-        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DURATION} >= 15000"
+        // Ignore short audio clips (< 15 seconds) if filter is enabled
+        val selection = if (filterShortAudio) {
+            "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DURATION} >= 15000"
+        } else {
+            "${MediaStore.Audio.Media.IS_MUSIC} != 0"
+        }
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
 
         try {

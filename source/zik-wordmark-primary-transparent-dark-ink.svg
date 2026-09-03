@@ -1,0 +1,11 @@
+<svg viewBox="0 0 460 260" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(40,60)">
+    <text x="0" y="140" fill="#000000" font-family="Helvetica, Arial, sans-serif" font-size="180" font-weight="800" letter-spacing="-4">Z</text>
+    <rect x="132" y="16" width="22" height="90" rx="10" fill="#000000"/>
+    <text x="178" y="140" fill="#000000" font-family="Helvetica, Arial, sans-serif" font-size="180" font-weight="800" letter-spacing="-4">k</text>
+    <g transform="translate(143,-24)">
+      <path d="M -34,0 L -20,0 L -13,-16 L -2,16 L 8,-10 L 16,0 L 34,0"
+            stroke="#357ABD" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+  </g>
+</svg>
