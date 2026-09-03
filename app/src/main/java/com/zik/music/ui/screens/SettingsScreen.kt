@@ -1,9 +1,12 @@
 package com.zik.music.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.res.painterResource
+import com.zik.music.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -296,6 +299,13 @@ fun SettingsScreen(
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.zik_wordmark_compact),
+                                contentDescription = "Zik",
+                                modifier = Modifier
+                                    .height(22.dp)
+                                    .padding(bottom = 6.dp)
+                            )
                             Text(
                                 text = "Zero Telemetry • 100% Offline",
                                 fontSize = 15.sp,

@@ -1,64 +1,71 @@
-# Zik 🎵
+<p align="center">
+  <img src="zik-wordmark-assets/png/primary/zik-wordmark-primary-dark@2x.png" alt="Zik Wordmark" width="420"/>
+</p>
 
-[![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white)](https://www.android.com/)
-[![Language](https://img.shields.io/badge/Language-Kotlin-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
-[![UI](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Audio](https://img.shields.io/badge/Engine-AndroidX%20Media3%20ExoPlayer-FF6F00)](https://developer.android.com/media/media3)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Privacy](https://img.shields.io/badge/Telemetry-ZERO-brightgreen)](Mandate.md)
+<p align="center">
+  <a href="https://www.android.com/"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Platform"/></a>
+  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?logo=kotlin&logoColor=white" alt="Language"/></a>
+  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white" alt="UI"/></a>
+  <a href="https://developer.android.com/media/media3"><img src="https://img.shields.io/badge/Engine-AndroidX%20Media3%20ExoPlayer-FF6F00" alt="Audio Engine"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"/></a>
+  <a href="Mandate.md"><img src="https://img.shields.io/badge/Telemetry-ZERO-brightgreen" alt="Privacy"/></a>
+</p>
 
 > **Straight talk.** You paid for the phone. You deserve a music app that respects that. No AI fluff, no telemetry, no cloud lock-in. Just pure, offline music playback with an uncompromising glassmorphic AMOLED aesthetic.
 
 ---
 
-## ✨ Features
+## Key Features
 
-### 🔒 100% Air-Gapped Privacy & Offline-First
+### 100% Air-Gapped Privacy & Offline-First
 * **Zero Internet Permissions**: `android.permission.INTERNET` is completely absent from the manifest. No data leaves your device—ever.
 * **Minimal Permissions**: Only requests access to local audio files. Zero location, zero contacts, zero telemetry SDKs.
 
-### 🎨 Glassmorphic & AMOLED Pure Black UI
+### Glassmorphic & AMOLED Pure Black UI
 * **AMOLED Pure Black (`#000000`)**: Deep blacks maximize battery life and contrast on OLED displays.
 * **Thin-Glass Surfaces**: Translucent tile surfaces with 1px micro-sheen borders.
-* **3D Cover Flip**: Tap the center artwork card to flip it 180° into an Apple Music-style kinetic scrolling lyrics view.
+* **3D Cover Flip**: Tap the center artwork card to flip it 180 degrees into an Apple Music-style kinetic scrolling lyrics view.
 * **Harmonic Sine-Wave Seekbar**: Live mathematical sine wave progress indicator that oscillates during playback with smooth touch scrubbing.
 * **Gesture Navigation**: Swipe left or right anywhere across the center modal to skip tracks.
 
-### 🎚️ 5-Band Parametric Equalizer & Audio FX
-* **Real-time Spline Visualizer**: Dynamic cubic-bezier frequency curve rendering real-time response on Canvas.
-* **5-Band Graphic EQ**: Independent vertical slider bars (`60Hz`, `230Hz`, `910Hz`, `3.6kHz`, `14kHz`) with dB readouts.
-* **One-Tap Presets**: *Flat, Rock, Pop, Jazz, Electronic, Vocal, Bass Boost, Classical, and Custom*.
+### 5-Band Parametric Equalizer & Audio FX Suite
+* **Real-Time Spline Visualizer**: Dynamic cubic-bezier frequency curve rendering real-time response on Canvas.
+* **5-Band Graphic EQ**: Independent vertical slider bars (`60Hz`, `230Hz`, `910Hz`, `3.6kHz`, `14kHz`) with dB readouts and guaranteed 0 dB Flat curve snapping.
+* **One-Tap Presets**: Flat, Rock, Pop, Jazz, Electronic, Vocal, Bass Boost, Classical, and Custom.
 * **Bass Boost & 3D Surround Virtualizer**: Sub-bass rumble enhancement and spatial widening.
-* **Persistent Engine**: Custom curves and audio effect levels are automatically preserved across app restarts.
 
-### 📋 Live Playback Queue
-* **Slide-Up Queue Sheet**: View your upcoming playlist from the top bar queue button.
-* **Pinned "Now Playing" Card**: Highlights active track with animated equalizer waves.
-* **Queue Controls**: Instant tap-to-jump, one-tap item removal, and "Clear Next" button.
-* **Quick Actions**: 3-dots popup on every track with *Play Next* and *Add to Queue*.
+### Audio Codec & Metadata Inspector
+* **Low-Level Hardware Probe**: Analyzes exact container format, bitrate, sample rate, bit depth, channel configuration, lossless/lossy status, and Hi-Res badges.
+* **Storage Path Actions**: View formatted file sizes and copy direct local storage paths to clipboard with one tap.
 
-### 🗂️ First-Class Library & Organization
-* **Folder-First Navigation**: Drill down into folders directly without metadata fragmentation.
-* **Reorderable Tabs**: Drag-and-drop category tabs (*Folders, Favorites, Songs, Albums*) with real-time neighbor slot displacement.
+### Sleep Timer with Gradual Volume Fade-Out
+* **Smart Volume Fade-Out**: Smoothly eases volume from 100% down to 0% linearly over the final 30 seconds before pausing.
+* **End of Current Track Mode**: Automatically calculates remaining track duration and stops playback at the end of the song.
+
+### Home Screen Music Widgets
+* **AMOLED Glass Widget Card**: Resizable 4x1/4x2 widget displaying rounded album artwork, track title, artist name, and playback transport controls.
+* **Direct Service Synchronization**: Synchronized directly with `PlaybackService`.
+
+### Persistent State & Cold Boot Restoration
+* **Automatic State Recovery**: Preserves last active track, playback position, and queue across process restarts.
+* **Reorderable Tabs**: Drag-and-drop category tabs (*Folders, Favorites, Songs, Albums, Artists*) with real-time neighbor slot displacement and persistent order storage.
 * **System-Wide Favorites**: Dedicated Favorites tab with instant heart toggles.
-* **Alphabetical Fast-Scroller**: Interactive side-rail scrubber with touch magnifier bubble.
-* **Multi-Select Batch Mode**: Long-press any track to enter multi-select mode and queue batches at once.
 * **Smart Metadata Sanitizer**: Automatically cleans messy download prefixes, `[y2mate]`, `(320kbps)`, and file extensions.
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## Tech Stack & Architecture
 
 * **UI Framework**: [Jetpack Compose](https://developer.android.com/jetpack/compose) with Material 3 Design Tokens
 * **Audio Playback**: [AndroidX Media3](https://developer.android.com/media/media3) (`MediaSessionService`, `ExoPlayer`)
 * **Audio FX**: Android Native `android.media.audiofx.Equalizer`, `BassBoost`, `Virtualizer`
-* **Architecture**: MVVM with Unidirectional Data Flow (`StateFlow`, `SharedFlow`, Coroutines)
+* **Architecture**: MVVM with Unidirectional Data Flow (`StateFlow`, Coroutines)
 * **Image Loading**: [Coil Compose](https://coil-kt.github.io/coil/compose/) (local embedded artwork decoding)
 * **Storage Access**: Android `MediaStore` API with recursive folder indexing
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 * Android Studio Ladybug / Meerkat or later
@@ -95,7 +102,7 @@ app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
-## 📜 Philosophy & Mandate
+## Philosophy & Mandate
 
 Read our complete product principles in [Mandate.md](Mandate.md):
 - **Zero Ads. Zero Tracking. Zero Cloud Gatekeeping.**
@@ -103,7 +110,7 @@ Read our complete product principles in [Mandate.md](Mandate.md):
 
 ---
 
-## 📄 License
+## License
 
 ```text
 Copyright 2026 Maphuti Shilabje
