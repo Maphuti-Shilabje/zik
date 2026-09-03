@@ -3,6 +3,8 @@ package com.zik.music.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.zik.music.data.AudioDetails
+import com.zik.music.data.AudioMetadataExtractor
 import com.zik.music.data.LrcParser
 import com.zik.music.data.MediaStoreScanner
 import com.zik.music.model.Folder
@@ -14,6 +16,7 @@ import com.zik.music.playback.MusicController
 import com.zik.music.playback.PlayerState
 import com.zik.music.playback.SleepTimerManager
 import com.zik.music.playback.SleepTimerState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +53,7 @@ data class LibraryUiState(
     val isSettingsOpen: Boolean = false,
     val isEqualizerOpen: Boolean = false,
     val isSleepTimerOpen: Boolean = false,
+    val inspectedSongDetails: AudioDetails? = null,
     val activeLyrics: List<LyricLine> = emptyList(),
     val selectedSongIds: Set<Long> = emptySet(),
     val hasPermission: Boolean = false
@@ -296,6 +300,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun cancelSleepTimer() {
         sleepTimerManager.cancelTimer()
+    }
+
+    fun inspectSong(song: Song) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val details = AudioMetadataExtractor.extract(getApplication(), song)
+            _uiState.value = _uiState.value.copy(inspectedSongDetails = details)
+        }
+    }
+
+    fun closeAudioInspector() {
+        _uiState.value = _uiState.value.copy(inspectedSongDetails = null)
     }
 
     override fun onCleared() {

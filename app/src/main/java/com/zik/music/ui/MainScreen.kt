@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.zik.music.ui.components.AudioInfoSheet
 import com.zik.music.ui.components.ExpandedPlayer
 import com.zik.music.ui.components.MiniPlayer
 import com.zik.music.ui.components.SleepTimerSheet
@@ -46,10 +47,12 @@ fun MainScreen(
 
     // Handle back button hierarchically
     BackHandler(
-        enabled = uiState.isSleepTimerOpen || uiState.isEqualizerOpen || uiState.isSettingsOpen || 
+        enabled = uiState.inspectedSongDetails != null || uiState.isSleepTimerOpen || 
+                  uiState.isEqualizerOpen || uiState.isSettingsOpen || 
                   uiState.isSelectionMode || uiState.isPlayerExpanded || uiState.selectedFolder != null
     ) {
         when {
+            uiState.inspectedSongDetails != null -> viewModel.closeAudioInspector()
             uiState.isSleepTimerOpen -> viewModel.closeSleepTimer()
             uiState.isEqualizerOpen -> viewModel.closeEqualizer()
             uiState.isSettingsOpen -> viewModel.closeSettings()
@@ -113,6 +116,7 @@ fun MainScreen(
                 onPlaySingleSongNext = { viewModel.playSingleSongNext(it) },
                 onAddSingleSongToQueue = { viewModel.addSingleSongToQueue(it) },
                 onToggleFavorite = { viewModel.toggleFavorite(it) },
+                onInspectSong = { viewModel.inspectSong(it) },
                 onSearchQueryChanged = { viewModel.updateSearchQuery(it) },
                 onOpenSettings = { viewModel.openSettings() }
             )
@@ -155,6 +159,7 @@ fun MainScreen(
                     onClearUpcomingQueue = { viewModel.clearUpcomingQueue() },
                     onOpenEqualizer = { viewModel.openEqualizer() },
                     onOpenSleepTimer = { viewModel.openSleepTimer() },
+                    onInspectSong = { viewModel.inspectSong(it) },
                     isSleepTimerActive = sleepTimerState.isActive,
                     onCollapse = { viewModel.setPlayerExpanded(false) }
                 )
@@ -212,6 +217,21 @@ fun MainScreen(
                     onCancelTimer = { viewModel.cancelSleepTimer() },
                     onClose = { viewModel.closeSleepTimer() }
                 )
+            }
+
+            // Audio Codec & Metadata Inspector Bottom Sheet Modal
+            AnimatedVisibility(
+                visible = uiState.inspectedSongDetails != null,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                uiState.inspectedSongDetails?.let { details ->
+                    AudioInfoSheet(
+                        details = details,
+                        onClose = { viewModel.closeAudioInspector() }
+                    )
+                }
             }
         }
     }

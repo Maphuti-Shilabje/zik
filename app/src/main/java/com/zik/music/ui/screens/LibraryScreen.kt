@@ -96,6 +96,7 @@ fun LibraryScreen(
     onPlaySingleSongNext: (Song) -> Unit = {},
     onAddSingleSongToQueue: (Song) -> Unit = {},
     onToggleFavorite: (Long) -> Unit = {},
+    onInspectSong: (Song) -> Unit = {},
     onSearchQueryChanged: (String) -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
@@ -343,7 +344,8 @@ fun LibraryScreen(
                                     onLongClick = { onToggleSongSelection(song.id) },
                                     onPlayNext = { onPlaySingleSongNext(song) },
                                     onAddToQueue = { onAddSingleSongToQueue(song) },
-                                    onToggleFavorite = { onToggleFavorite(song.id) }
+                                    onToggleFavorite = { onToggleFavorite(song.id) },
+                                    onShowAudioInfo = { onInspectSong(song) }
                                 )
                             }
                         }
@@ -415,7 +417,8 @@ fun LibraryScreen(
                                         onLongClick = { onToggleSongSelection(song.id) },
                                         onPlayNext = { onPlaySingleSongNext(song) },
                                         onAddToQueue = { onAddSingleSongToQueue(song) },
-                                        onToggleFavorite = { onToggleFavorite(song.id) }
+                                        onToggleFavorite = { onToggleFavorite(song.id) },
+                                        onShowAudioInfo = { onInspectSong(song) }
                                     )
                                 }
                             }
@@ -467,7 +470,8 @@ fun LibraryScreen(
                                         onLongClick = { onToggleSongSelection(song.id) },
                                         onPlayNext = { onPlaySingleSongNext(song) },
                                         onAddToQueue = { onAddSingleSongToQueue(song) },
-                                        onToggleFavorite = { onToggleFavorite(song.id) }
+                                        onToggleFavorite = { onToggleFavorite(song.id) },
+                                        onShowAudioInfo = { onInspectSong(song) }
                                     )
                                 }
                             }
@@ -515,7 +519,8 @@ fun LibraryScreen(
                                     onClick = { onSongSelected(firstSong, albumSongs) },
                                     onPlayNext = { onPlaySingleSongNext(firstSong) },
                                     onAddToQueue = { onAddSingleSongToQueue(firstSong) },
-                                    onToggleFavorite = { onToggleFavorite(firstSong.id) }
+                                    onToggleFavorite = { onToggleFavorite(firstSong.id) },
+                                    onShowAudioInfo = { onInspectSong(firstSong) }
                                 )
                             }
                         }
@@ -541,7 +546,8 @@ fun LibraryScreen(
                                     onClick = { onSongSelected(firstSong, artistSongs) },
                                     onPlayNext = { onPlaySingleSongNext(firstSong) },
                                     onAddToQueue = { onAddSingleSongToQueue(firstSong) },
-                                    onToggleFavorite = { onToggleFavorite(firstSong.id) }
+                                    onToggleFavorite = { onToggleFavorite(firstSong.id) },
+                                    onShowAudioInfo = { onInspectSong(firstSong) }
                                 )
                             }
                         }

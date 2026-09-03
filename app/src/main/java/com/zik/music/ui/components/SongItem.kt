@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
@@ -61,6 +62,7 @@ fun SongItem(
     onPlayNext: () -> Unit = {},
     onAddToQueue: () -> Unit = {},
     onToggleFavorite: () -> Unit = {},
+    onShowAudioInfo: () -> Unit = {},
     isFavorite: Boolean = false,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
@@ -244,6 +246,22 @@ fun SongItem(
                             onClick = {
                                 showMenu = false
                                 onToggleFavorite()
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = { Text("Audio Details", color = Color.White, fontSize = 14.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = AccentMutedBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onShowAudioInfo()
                             }
                         )
                     }
