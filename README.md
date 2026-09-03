@@ -11,7 +11,28 @@
   <a href="Mandate.md"><img src="https://img.shields.io/badge/Telemetry-ZERO-brightgreen" alt="Privacy"/></a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/Maphuti-Shilabje/zik/releases/latest/download/zik-v1.0.0.apk">
+    <img src="https://img.shields.io/badge/Download%20APK-v1.0.0%20(Latest)-357ABD?style=for-the-badge&logo=android&logoColor=white" alt="Download APK"/>
+  </a>
+</p>
+
 > **Straight talk.** You paid for the phone. You deserve a music app that respects that. No AI fluff, no telemetry, no cloud lock-in. Just pure, offline music playback with an uncompromising glassmorphic AMOLED aesthetic.
+
+---
+
+## Direct Download & Installation
+
+You can download and install the Zik APK directly on any Android device without cloning or compiling the source code:
+
+* **Direct APK Download**: [Download zik-v1.0.0.apk](https://github.com/Maphuti-Shilabje/zik/releases/latest/download/zik-v1.0.0.apk)
+* **Latest Binary Mirror**: [Download zik-latest.apk](https://github.com/Maphuti-Shilabje/zik/releases/latest/download/zik-latest.apk)
+* **All Releases**: [GitHub Releases Page](https://github.com/Maphuti-Shilabje/zik/releases)
+
+### SHA-256 Checksum Verification
+```text
+983cfe1308f87de6c6882edfff8bc7e5bdb6ebff3945ff6b54573e9a73a8abd3  zik-v1.0.0.apk
+```
 
 ---
 
@@ -65,14 +86,14 @@
 
 ---
 
-## Getting Started
+## Building from Source
 
 ### Prerequisites
 * Android Studio Ladybug / Meerkat or later
 * Android SDK 34+
 * JDK 17
 
-### Building from Source
+### Build Steps
 
 1. Clone the repository:
    ```bash
