@@ -111,8 +111,8 @@ fun SettingsScreen(
                     // Equalizer Navigation Row
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = Color.White.copy(alpha = 0.08f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                        color = Color.Transparent,
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
@@ -152,8 +152,8 @@ fun SettingsScreen(
                     // Sleep Timer Navigation Row
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = Color.White.copy(alpha = 0.08f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                        color = Color.Transparent,
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
@@ -217,8 +217,8 @@ fun SettingsScreen(
                     // Rescan Action Card
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = Color.White.copy(alpha = 0.08f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                        color = Color.Transparent,
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
@@ -283,8 +283,8 @@ fun SettingsScreen(
                     SettingsSectionHeader("PRIVACY & APP INFO")
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = Color.White.copy(alpha = 0.08f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                        color = Color.Transparent,
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
@@ -342,8 +342,8 @@ fun SettingsToggleRow(
 ) {
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = 0.08f),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)

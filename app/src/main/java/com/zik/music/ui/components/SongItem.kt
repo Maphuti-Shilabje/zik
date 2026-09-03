@@ -191,7 +191,7 @@ fun SongItem(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false },
                         modifier = Modifier
-                            .background(Color(0xF0181C26))
+                            .background(PureBlack)
                             .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)), RoundedCornerShape(16.dp))
                             .clip(RoundedCornerShape(16.dp))
                     ) {

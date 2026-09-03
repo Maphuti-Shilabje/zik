@@ -1,8 +1,5 @@
 package com.zik.music.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,12 +18,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -34,14 +30,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zik.music.playback.SleepTimerState
@@ -59,8 +53,8 @@ fun SleepTimerSheet(
 ) {
     Surface(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        color = Color(0xF20F131D),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
+        color = PureBlack,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.16f)),
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
@@ -78,7 +72,7 @@ fun SleepTimerSheet(
                     .width(40.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color.White.copy(alpha = 0.35f))
+                    .background(Color.White.copy(alpha = 0.25f))
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -107,8 +101,8 @@ fun SleepTimerSheet(
 
                 Surface(
                     shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.10f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.20f)),
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
                     modifier = Modifier.size(36.dp)
                 ) {
                     IconButton(onClick = onClose) {
@@ -128,7 +122,7 @@ fun SleepTimerSheet(
             if (timerState.isActive) {
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = AccentMutedBlue.copy(alpha = 0.12f),
+                    color = AccentMutedBlue.copy(alpha = 0.08f),
                     border = BorderStroke(1.dp, AccentMutedBlue.copy(alpha = 0.40f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -163,7 +157,7 @@ fun SleepTimerSheet(
                                 .height(4.dp)
                                 .clip(RoundedCornerShape(2.dp)),
                             color = AccentMutedBlue,
-                            trackColor = Color.White.copy(alpha = 0.12f)
+                            trackColor = Color.White.copy(alpha = 0.10f)
                         )
 
                         Spacer(modifier = Modifier.height(10.dp))
@@ -173,7 +167,7 @@ fun SleepTimerSheet(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.VolumeDown,
+                                imageVector = Icons.AutoMirrored.Filled.VolumeDown,
                                 contentDescription = null,
                                 tint = Color.White.copy(alpha = 0.6f),
                                 modifier = Modifier.size(14.dp)
@@ -192,10 +186,10 @@ fun SleepTimerSheet(
                             onClick = onCancelTimer,
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0x33FF5252),
+                                containerColor = Color(0x22FF5252),
                                 contentColor = Color(0xFFFF5252)
                             ),
-                            border = BorderStroke(1.dp, Color(0x66FF5252)),
+                            border = BorderStroke(1.dp, Color(0x55FF5252)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
@@ -232,10 +226,10 @@ fun SleepTimerSheet(
                 // End of Track Option
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = if (timerState.isActive && timerState.isEndOfTrackMode) AccentMutedBlue.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.04f),
+                    color = if (timerState.isActive && timerState.isEndOfTrackMode) AccentMutedBlue.copy(alpha = 0.12f) else Color.Transparent,
                     border = BorderStroke(
                         1.dp,
-                        if (timerState.isActive && timerState.isEndOfTrackMode) AccentMutedBlue.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.10f)
+                        if (timerState.isActive && timerState.isEndOfTrackMode) AccentMutedBlue.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.12f)
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -282,10 +276,10 @@ fun SleepTimerSheet(
 
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = if (isCurrentPreset) AccentMutedBlue.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.04f),
+                        color = if (isCurrentPreset) AccentMutedBlue.copy(alpha = 0.12f) else Color.Transparent,
                         border = BorderStroke(
                             1.dp,
-                            if (isCurrentPreset) AccentMutedBlue.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.10f)
+                            if (isCurrentPreset) AccentMutedBlue.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.12f)
                         ),
                         modifier = Modifier
                             .fillMaxWidth()

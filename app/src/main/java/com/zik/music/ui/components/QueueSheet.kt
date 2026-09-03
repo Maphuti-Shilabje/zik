@@ -74,8 +74,8 @@ fun QueueSheet(
 
     Surface(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        color = Color(0xF20F131D),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
+        color = PureBlack,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.16f)),
         modifier = modifier
             .fillMaxWidth()
             .fillMaxHeight(0.85f)

@@ -381,8 +381,8 @@ fun ExpandedPlayer(
                 // Card 1: Track Metadata & Sine Wave Progress Bar
                 Surface(
                     shape = RoundedCornerShape(22.dp),
-                    color = Color.White.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -466,8 +466,8 @@ fun ExpandedPlayer(
                 // Card 2: Floating Pill Transport Controls
                 Surface(
                     shape = RoundedCornerShape(36.dp),
-                    color = Color.White.copy(alpha = 0.14f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(72.dp)

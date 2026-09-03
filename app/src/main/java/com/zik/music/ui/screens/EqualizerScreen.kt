@@ -144,7 +144,7 @@ fun EqualizerScreen(
                     val isSelected = eqState.currentPreset == index
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = if (isSelected && eqState.isEnabled) AccentMutedBlue else Color.White.copy(alpha = 0.06f),
+                        color = if (isSelected && eqState.isEnabled) AccentMutedBlue else Color.Transparent,
                         border = BorderStroke(
                             1.dp,
                             if (isSelected && eqState.isEnabled) AccentMutedBlue else Color.White.copy(alpha = 0.14f)
@@ -171,7 +171,7 @@ fun EqualizerScreen(
             // 3. Frequency Response Visualizer Curve
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.04f),
+                color = Color.Transparent,
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -261,7 +261,7 @@ fun EqualizerScreen(
             // 4. Interactive Graphic Equalizer 5 Bands
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                color = Color.White.copy(alpha = 0.04f),
+                color = Color.Transparent,
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -402,7 +402,7 @@ fun EqualizerScreen(
 
                                         // Inner Thumb Center
                                         drawCircle(
-                                            color = if (eqState.isEnabled) AccentMutedBlue else Color(0xFF2A2E3D),
+                                            color = if (eqState.isEnabled) AccentMutedBlue else PureBlack,
                                             radius = 5.dp.toPx(),
                                             center = Offset(centerX, thumbY)
                                         )
@@ -436,7 +436,7 @@ fun EqualizerScreen(
                 // Bass Boost Glass Card
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = Color.White.copy(alpha = 0.04f),
+                    color = Color.Transparent,
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -488,7 +488,7 @@ fun EqualizerScreen(
                 // 3D Virtualizer Glass Card
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = Color.White.copy(alpha = 0.04f),
+                    color = Color.Transparent,
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -606,7 +606,7 @@ private fun GlassHorizontalSlider(
 
             // Inner Accent Center
             drawCircle(
-                color = if (enabled) AccentMutedBlue else Color(0xFF2A2E3D),
+                color = if (enabled) AccentMutedBlue else PureBlack,
                 radius = 4.dp.toPx(),
                 center = Offset(thumbX, centerY)
             )

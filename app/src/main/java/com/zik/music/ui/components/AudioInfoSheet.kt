@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -62,8 +61,8 @@ fun AudioInfoSheet(
 
     Surface(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        color = Color(0xF20F131D),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
+        color = PureBlack,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.16f)),
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
@@ -81,7 +80,7 @@ fun AudioInfoSheet(
                     .width(40.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color.White.copy(alpha = 0.35f))
+                    .background(Color.White.copy(alpha = 0.25f))
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -110,8 +109,8 @@ fun AudioInfoSheet(
 
                 Surface(
                     shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.10f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.20f)),
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
                     modifier = Modifier.size(36.dp)
                 ) {
                     IconButton(onClick = onClose) {
@@ -138,7 +137,7 @@ fun AudioInfoSheet(
                 // 1. Codec & Hi-Res Summary Hero Card
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = AccentMutedBlue.copy(alpha = 0.12f),
+                    color = AccentMutedBlue.copy(alpha = 0.08f),
                     border = BorderStroke(1.dp, AccentMutedBlue.copy(alpha = 0.35f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -243,8 +242,8 @@ fun AudioInfoSheet(
                         Spacer(modifier = Modifier.height(4.dp))
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = Color.White.copy(alpha = 0.05f),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
+                            color = Color.Transparent,
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
@@ -311,7 +310,7 @@ private fun InspectorSection(
 ) {
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = 0.04f),
+        color = Color.Transparent,
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -379,10 +378,10 @@ private fun BadgePill(
 ) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = if (isAccent) AccentMutedBlue.copy(alpha = 0.20f) else Color.White.copy(alpha = 0.10f),
+        color = if (isAccent) AccentMutedBlue.copy(alpha = 0.16f) else Color.Transparent,
         border = BorderStroke(
             1.dp,
-            if (isAccent) AccentMutedBlue.copy(alpha = 0.50f) else Color.White.copy(alpha = 0.20f)
+            if (isAccent) AccentMutedBlue.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.15f)
         )
     ) {
         Text(
