@@ -150,7 +150,7 @@ fun ExpandedPlayer(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Bar: Back Button, "Now Playing", Action Buttons
+            // Top Bar: Back Button, "Now Playing", and Favorite Heart Button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -182,80 +182,20 @@ fun ExpandedPlayer(
                     color = Color.White
                 )
 
-                // Action Buttons: Favorite, Sleep Timer, Equalizer & Queue
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    // Frosted Circular Favorite Button
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.White.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        IconButton(onClick = onToggleFavorite) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Favorite",
-                                tint = if (isFavorite) Color(0xFFFF4081) else Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    // Frosted Circular Sleep Timer Button
-                    Surface(
-                        shape = CircleShape,
-                        color = if (isSleepTimerActive) AccentMutedBlue else Color.White.copy(alpha = 0.15f),
-                        border = BorderStroke(
-                            1.dp,
-                            if (isSleepTimerActive) AccentMutedBlue else Color.White.copy(alpha = 0.25f)
-                        ),
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        IconButton(onClick = onOpenSleepTimer) {
-                            Icon(
-                                imageVector = Icons.Default.Bedtime,
-                                contentDescription = "Sleep Timer",
-                                tint = if (isSleepTimerActive) PureBlack else Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    // Frosted Circular Equalizer Button
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.White.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        IconButton(onClick = onOpenEqualizer) {
-                            Icon(
-                                imageVector = Icons.Default.Equalizer,
-                                contentDescription = "Equalizer",
-                                tint = AccentMutedBlue,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    // Frosted Circular Queue Button
-                    Surface(
-                        shape = CircleShape,
-                        color = if (showQueue) AccentMutedBlue else Color.White.copy(alpha = 0.15f),
-                        border = BorderStroke(
-                            1.dp,
-                            if (showQueue) AccentMutedBlue else Color.White.copy(alpha = 0.25f)
-                        ),
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        IconButton(onClick = { showQueue = !showQueue }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.QueueMusic,
-                                contentDescription = "Queue",
-                                tint = if (showQueue) PureBlack else Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                // Frosted Circular Favorite Button
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.15f),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                    modifier = Modifier.size(42.dp)
+                ) {
+                    IconButton(onClick = onToggleFavorite) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) Color(0xFFFF4081) else Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }
@@ -354,8 +294,86 @@ fun ExpandedPlayer(
             // Bottom Section: Floating Frosted Cards
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // Secondary Utility Pill: [ 🌙 Sleep Timer | 🎚️ Equalizer | 📑 Queue ]
+                Surface(
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color.White.copy(alpha = 0.08f),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 1. Sleep Timer Button
+                        Surface(
+                            shape = CircleShape,
+                            color = if (isSleepTimerActive) AccentMutedBlue else Color.Transparent,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            IconButton(onClick = onOpenSleepTimer) {
+                                Icon(
+                                    imageVector = Icons.Default.Bedtime,
+                                    contentDescription = "Sleep Timer",
+                                    tint = if (isSleepTimerActive) PureBlack else Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        // Divider
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(16.dp)
+                                .background(Color.White.copy(alpha = 0.15f))
+                        )
+
+                        // 2. Equalizer Button
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.Transparent,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            IconButton(onClick = onOpenEqualizer) {
+                                Icon(
+                                    imageVector = Icons.Default.Equalizer,
+                                    contentDescription = "Equalizer",
+                                    tint = AccentMutedBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        // Divider
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(16.dp)
+                                .background(Color.White.copy(alpha = 0.15f))
+                        )
+
+                        // 3. Queue Button
+                        Surface(
+                            shape = CircleShape,
+                            color = if (showQueue) AccentMutedBlue else Color.Transparent,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            IconButton(onClick = { showQueue = !showQueue }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.QueueMusic,
+                                    contentDescription = "Queue",
+                                    tint = if (showQueue) PureBlack else Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Card 1: Track Metadata & Sine Wave Progress Bar
                 Surface(
                     shape = RoundedCornerShape(22.dp),
