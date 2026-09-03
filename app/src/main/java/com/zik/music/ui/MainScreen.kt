@@ -9,6 +9,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -18,10 +20,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.zik.music.ui.components.AudioInfoSheet
 import com.zik.music.ui.components.ExpandedPlayer
@@ -44,6 +51,18 @@ fun MainScreen(
     val playerState by viewModel.playerState.collectAsState()
     val eqState by viewModel.eqUiState.collectAsState()
     val sleepTimerState by viewModel.sleepTimerState.collectAsState()
+    val focusManager = LocalFocusManager.current
+
+    val isAnyOverlayActive = uiState.isPlayerExpanded || uiState.isSettingsOpen || 
+                             uiState.isEqualizerOpen || uiState.isSleepTimerOpen || 
+                             uiState.inspectedSongDetails != null
+
+    // Industry-standard focus clearance on screen transitions
+    LaunchedEffect(isAnyOverlayActive) {
+        if (isAnyOverlayActive) {
+            focusManager.clearFocus()
+        }
+    }
 
     // Handle back button hierarchically
     BackHandler(
@@ -99,27 +118,44 @@ fun MainScreen(
                 }
             }
         } else {
-            // Main Library View
-            LibraryScreen(
-                uiState = uiState,
-                playerState = playerState,
-                onTabSelected = { viewModel.selectTab(it) },
-                onReorderTabs = { from, to -> viewModel.reorderTabs(from, to) },
-                onFolderSelected = { viewModel.openFolder(it) },
-                onCloseFolder = { viewModel.closeFolder() },
-                onSongSelected = { song, queue -> viewModel.playSong(song, queue) },
-                onToggleSongSelection = { viewModel.toggleSongSelection(it) },
-                onSelectAll = { viewModel.selectAll(it) },
-                onClearSelection = { viewModel.clearSelection() },
-                onPlaySelectedNext = { viewModel.playSelectedNext() },
-                onAddSelectedToQueue = { viewModel.addSelectedToQueue() },
-                onPlaySingleSongNext = { viewModel.playSingleSongNext(it) },
-                onAddSingleSongToQueue = { viewModel.addSingleSongToQueue(it) },
-                onToggleFavorite = { viewModel.toggleFavorite(it) },
-                onInspectSong = { viewModel.inspectSong(it) },
-                onSearchQueryChanged = { viewModel.updateSearchQuery(it) },
-                onOpenSettings = { viewModel.openSettings() }
-            )
+            // Main Library View (with touch gating when any overlay is active)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (isAnyOverlayActive) {
+                            Modifier.pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        event.changes.forEach { it.consume() }
+                                    }
+                                }
+                            }
+                        } else Modifier
+                    )
+            ) {
+                LibraryScreen(
+                    uiState = uiState,
+                    playerState = playerState,
+                    onTabSelected = { viewModel.selectTab(it) },
+                    onReorderTabs = { from, to -> viewModel.reorderTabs(from, to) },
+                    onFolderSelected = { viewModel.openFolder(it) },
+                    onCloseFolder = { viewModel.closeFolder() },
+                    onSongSelected = { song, queue -> viewModel.playSong(song, queue) },
+                    onToggleSongSelection = { viewModel.toggleSongSelection(it) },
+                    onSelectAll = { viewModel.selectAll(it) },
+                    onClearSelection = { viewModel.clearSelection() },
+                    onPlaySelectedNext = { viewModel.playSelectedNext() },
+                    onAddSelectedToQueue = { viewModel.addSelectedToQueue() },
+                    onPlaySingleSongNext = { viewModel.playSingleSongNext(it) },
+                    onAddSingleSongToQueue = { viewModel.addSingleSongToQueue(it) },
+                    onToggleFavorite = { viewModel.toggleFavorite(it) },
+                    onInspectSong = { viewModel.inspectSong(it) },
+                    onSearchQueryChanged = { viewModel.updateSearchQuery(it) },
+                    onOpenSettings = { viewModel.openSettings() }
+                )
+            }
 
             // Persistent Mini-Player Bar at bottom
             if (playerState.currentSong != null && !uiState.isPlayerExpanded) {
@@ -197,40 +233,84 @@ fun MainScreen(
                 )
             }
 
-            // Sleep Timer Bottom Sheet Modal
+            // Sleep Timer Bottom Sheet Modal with Full-Screen Scrim Barrier
             AnimatedVisibility(
                 visible = uiState.isSleepTimerOpen,
-                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                modifier = Modifier.align(Alignment.BottomCenter)
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                SleepTimerSheet(
-                    timerState = sleepTimerState,
-                    onStartTimer = {
-                        viewModel.startSleepTimer(it)
-                        viewModel.closeSleepTimer()
-                    },
-                    onStartEndOfTrack = {
-                        viewModel.startEndOfTrackSleepTimer()
-                        viewModel.closeSleepTimer()
-                    },
-                    onCancelTimer = { viewModel.cancelSleepTimer() },
-                    onClose = { viewModel.closeSleepTimer() }
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(PureBlack.copy(alpha = 0.65f))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { viewModel.closeSleepTimer() }
+                        )
+                ) {
+                    AnimatedVisibility(
+                        visible = uiState.isSleepTimerOpen,
+                        enter = slideInVertically(initialOffsetY = { it }),
+                        exit = slideOutVertically(targetOffsetY = { it }),
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    ) {
+                        SleepTimerSheet(
+                            timerState = sleepTimerState,
+                            onStartTimer = {
+                                viewModel.startSleepTimer(it)
+                                viewModel.closeSleepTimer()
+                            },
+                            onStartEndOfTrack = {
+                                viewModel.startEndOfTrackSleepTimer()
+                                viewModel.closeSleepTimer()
+                            },
+                            onCancelTimer = { viewModel.cancelSleepTimer() },
+                            onClose = { viewModel.closeSleepTimer() },
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = {} // Consume clicks inside the sheet
+                            )
+                        )
+                    }
+                }
             }
 
-            // Audio Codec & Metadata Inspector Bottom Sheet Modal
+            // Audio Codec & Metadata Inspector Bottom Sheet Modal with Full-Screen Scrim Barrier
             AnimatedVisibility(
                 visible = uiState.inspectedSongDetails != null,
-                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                modifier = Modifier.align(Alignment.BottomCenter)
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                uiState.inspectedSongDetails?.let { details ->
-                    AudioInfoSheet(
-                        details = details,
-                        onClose = { viewModel.closeAudioInspector() }
-                    )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(PureBlack.copy(alpha = 0.65f))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { viewModel.closeAudioInspector() }
+                        )
+                ) {
+                    AnimatedVisibility(
+                        visible = uiState.inspectedSongDetails != null,
+                        enter = slideInVertically(initialOffsetY = { it }),
+                        exit = slideOutVertically(targetOffsetY = { it }),
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    ) {
+                        uiState.inspectedSongDetails?.let { details ->
+                            AudioInfoSheet(
+                                details = details,
+                                onClose = { viewModel.closeAudioInspector() },
+                                modifier = Modifier.clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = {} // Consume clicks inside the sheet
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }

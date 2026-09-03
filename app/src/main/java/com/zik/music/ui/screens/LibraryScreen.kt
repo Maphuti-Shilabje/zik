@@ -60,6 +60,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -101,6 +102,7 @@ fun LibraryScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
     val songsListState = rememberLazyListState()
 
@@ -246,7 +248,10 @@ fun LibraryScreen(
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.20f)),
                         modifier = Modifier.size(44.dp)
                     ) {
-                        IconButton(onClick = onOpenSettings) {
+                        IconButton(onClick = {
+                            focusManager.clearFocus()
+                            onOpenSettings()
+                        }) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = "Settings",

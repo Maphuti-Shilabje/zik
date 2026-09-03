@@ -61,6 +61,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -116,6 +117,14 @@ fun ExpandedPlayer(
         modifier = modifier
             .fillMaxSize()
             .background(PureBlack)
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        event.changes.forEach { it.consume() }
+                    }
+                }
+            }
     ) {
         // 1. Full-bleed Immersive Background Artwork with Soft Scrim
         if (song.albumArtUri != null) {
@@ -560,23 +569,45 @@ fun ExpandedPlayer(
             }
         }
 
-        // 3. Queue Bottom Sheet Modal Overlay
+        // 3. Queue Bottom Sheet Modal Overlay with Full-Screen Scrim Barrier
         AnimatedVisibility(
             visible = showQueue,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter)
+            enter = fadeIn(),
+            exit = fadeOut()
         ) {
-            QueueSheet(
-                playerState = playerState,
-                onPlayIndex = { index ->
-                    onPlayQueueIndex(index)
-                    showQueue = false
-                },
-                onRemoveIndex = onRemoveQueueIndex,
-                onClearUpcoming = onClearUpcomingQueue,
-                onClose = { showQueue = false }
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(PureBlack.copy(alpha = 0.65f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { showQueue = false }
+                    )
+            ) {
+                AnimatedVisibility(
+                    visible = showQueue,
+                    enter = slideInVertically(initialOffsetY = { it }),
+                    exit = slideOutVertically(targetOffsetY = { it }),
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                ) {
+                    QueueSheet(
+                        playerState = playerState,
+                        onPlayIndex = { index ->
+                            onPlayQueueIndex(index)
+                            showQueue = false
+                        },
+                        onRemoveIndex = onRemoveQueueIndex,
+                        onClearUpcoming = onClearUpcomingQueue,
+                        onClose = { showQueue = false },
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {} // Consume clicks inside the sheet
+                        )
+                    )
+                }
+            }
         }
     }
 }
