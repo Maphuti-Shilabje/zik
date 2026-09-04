@@ -6,5 +6,6 @@ data class SpatialParameters(
     val radius: Double = 1.5,
     val distanceRolloff: Double = 0.5,
     val referenceDistance: Double = 1.0,
-    val headroom: Double = 0.95
+    val headroom: Double = 0.95,
+    val spreadAngleDegrees: Double = 30.0
 )

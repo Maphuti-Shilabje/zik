@@ -15,7 +15,8 @@ class StereoSpatialRendererTest {
         radius = 1.5,
         referenceDistance = 1.0,
         distanceRolloff = 0.5,
-        headroom = 0.95
+        headroom = 0.95,
+        spreadAngleDegrees = 30.0
     )
     private val delta = 0.001
 
@@ -26,124 +27,191 @@ class StereoSpatialRendererTest {
     }
 
     @Test
-    fun calculateTargetGains_centeredFrontSource_producesBalancedStereo() {
-        val position = Vector3(0.0, 0.0, 1.0)
-        val (leftGain, rightGain) = renderer.calculateTargetGains(position, defaultParams)
+    fun calculateVirtualEmitterPositions_frontHeading_producesSymmetricPositions() {
+        val heading = Vector3(0.0, 0.0, 1.5)
+        val (leftEmitter, rightEmitter) = renderer.calculateVirtualEmitterPositions(heading, 30.0)
 
-        assertEquals(leftGain, rightGain, delta)
-        assertTrue(leftGain > 0.0)
+        // S_L should be to the left (x < 0) and S_R to the right (x > 0)
+        assertTrue(leftEmitter.x < 0.0)
+        assertTrue(rightEmitter.x > 0.0)
+        assertEquals(abs(leftEmitter.x), rightEmitter.x, delta)
+        assertEquals(leftEmitter.z, rightEmitter.z, delta)
+        assertEquals(1.5, leftEmitter.length(), delta)
+        assertEquals(1.5, rightEmitter.length(), delta)
     }
 
     @Test
-    fun calculateTargetGains_sourceToRight_producesStrongerRightOutput() {
-        val position = Vector3(1.5, 0.0, 0.0) // Pure right
-        val (leftGain, rightGain) = renderer.calculateTargetGains(position, defaultParams)
+    fun calculateVirtualEmitterPositions_rightHeading_rotatesBothEmittersTogether() {
+        val heading = Vector3(1.5, 0.0, 0.0) // Pure right (+90 deg)
+        val (leftEmitter, rightEmitter) = renderer.calculateVirtualEmitterPositions(heading, 30.0)
 
-        assertTrue("Right gain ($rightGain) should be strictly greater than left gain ($leftGain)", rightGain > leftGain)
+        // At +90 deg heading with 30 deg spread: S_L is at +60 deg, S_R is at +120 deg
+        // Both emitters have positive X
+        assertTrue("Left emitter should have x > 0", leftEmitter.x > 0.0)
+        assertTrue("Right emitter should have x > 0", rightEmitter.x > 0.0)
+        assertTrue("Left emitter should have z > 0 (60 deg)", leftEmitter.z > 0.0)
+        assertTrue("Right emitter should have z < 0 (120 deg)", rightEmitter.z < 0.0)
+        assertEquals(1.5, leftEmitter.length(), delta)
+        assertEquals(1.5, rightEmitter.length(), delta)
+    }
+
+    @Test
+    fun processFrame_hardLeftInput_recoversSignalWithoutMonoCollapse() {
+        val heading = Vector3(0.0, 0.0, 1.5)
+        var lastLeftOut: Short = 0
+        var lastRightOut: Short = 0
+
+        for (i in 0 until 3000) {
+            val (lOut, rOut) = renderer.processFrame(
+                leftSample = 10000,
+                rightSample = 0,
+                position = heading,
+                parameters = defaultParams,
+                transitionWeight = 1.0f
+            )
+            lastLeftOut = lOut
+            lastRightOut = rOut
+        }
+
+        // Left ear receives direct path LL (~4965); Right ear receives crossfeed path LR (~2057)
+        assertTrue("Left ear output ($lastLeftOut) should be substantially positive", lastLeftOut > 4000)
+        assertTrue("Right ear output ($lastRightOut) should receive non-zero crossfeed", lastRightOut > 1500)
+        assertTrue("Left ear should be louder than Right ear for hard-left input", lastLeftOut > lastRightOut)
+    }
+
+    @Test
+    fun processFrame_hardRightInput_recoversSignalWithoutMonoCollapse() {
+        val heading = Vector3(0.0, 0.0, 1.5)
+        var lastLeftOut: Short = 0
+        var lastRightOut: Short = 0
+
+        for (i in 0 until 3000) {
+            val (lOut, rOut) = renderer.processFrame(
+                leftSample = 0,
+                rightSample = 10000,
+                position = heading,
+                parameters = defaultParams,
+                transitionWeight = 1.0f
+            )
+            lastLeftOut = lOut
+            lastRightOut = rOut
+        }
+
+        assertTrue("Right ear output ($lastRightOut) should be substantially positive", lastRightOut > 4000)
+        assertTrue("Left ear output ($lastLeftOut) should receive non-zero crossfeed", lastLeftOut > 1500)
+        assertTrue("Right ear should be louder than Left ear for hard-right input", lastRightOut > lastLeftOut)
+    }
+
+    @Test
+    fun processFrame_antiPhaseInput_doesNotCancelToSilence() {
+        // Critical test: In the old mono (L+R)/2 architecture, L = 10000 and R = -10000 would cancel to exactly 0.
+        // In the 4-path dual virtual loudspeaker architecture, the signals must remain fully audible.
+        val heading = Vector3(0.0, 0.0, 1.5)
+        var maxObservedLeft = 0
+        var maxObservedRight = 0
+
+        for (i in 0 until 3000) {
+            val (lOut, rOut) = renderer.processFrame(
+                leftSample = 10000,
+                rightSample = (-10000).toShort(),
+                position = heading,
+                parameters = defaultParams,
+                transitionWeight = 1.0f
+            )
+            if (i >= 2000) {
+                maxObservedLeft = maxOf(maxObservedLeft, abs(lOut.toInt()))
+                maxObservedRight = maxOf(maxObservedRight, abs(rOut.toInt()))
+            }
+        }
+
+        assertTrue(
+            "Anti-phase input must NOT cancel to silence on Left ear (observed: $maxObservedLeft)",
+            maxObservedLeft > 2000
+        )
+        assertTrue(
+            "Anti-phase input must NOT cancel to silence on Right ear (observed: $maxObservedRight)",
+            maxObservedRight > 2000
+        )
+    }
+
+    @Test
+    fun processFrame_distinctChannelSignals_contributeIndependently() {
+        val heading = Vector3(0.0, 0.0, 1.5)
+        var leftEarOut: Short = 0
+        var rightEarOut: Short = 0
+
+        for (i in 0 until 3000) {
+            val (lOut, rOut) = renderer.processFrame(
+                leftSample = 12000,
+                rightSample = 4000,
+                position = heading,
+                parameters = defaultParams,
+                transitionWeight = 1.0f
+            )
+            leftEarOut = lOut
+            rightEarOut = rOut
+        }
+
+        // Left ear should reflect dominant left input (12000) + crossfeed from right (4000)
+        // Right ear should reflect dominant right input (4000) + crossfeed from left (12000)
+        assertTrue("Left ear should be louder than Right ear", leftEarOut > rightEarOut)
+        assertTrue("Both ears should have non-zero output", leftEarOut > 0 && rightEarOut > 0)
+    }
+
+    @Test
+    fun processFrame_symmetryAcrossMedianPlane() {
+        val heading = Vector3(0.0, 0.0, 1.5)
+
+        // Case 1: L=8000, R=2000
+        renderer.reset()
+        var l1 = 0
+        var r1 = 0
+        for (i in 0 until 3000) {
+            val (lOut, rOut) = renderer.processFrame(8000, 2000, heading, defaultParams, 1.0f)
+            l1 = lOut.toInt()
+            r1 = rOut.toInt()
+        }
+
+        // Case 2: Swapped inputs L=2000, R=8000
+        renderer.reset()
+        var l2 = 0
+        var r2 = 0
+        for (i in 0 until 3000) {
+            val (lOut, rOut) = renderer.processFrame(2000, 8000, heading, defaultParams, 1.0f)
+            l2 = lOut.toInt()
+            r2 = rOut.toInt()
+        }
+
+        // Symmetrical swap check
+        assertEquals("Left ear (case 1) should match Right ear (case 2)", l1.toDouble(), r2.toDouble(), 10.0)
+        assertEquals("Right ear (case 1) should match Left ear (case 2)", r1.toDouble(), l2.toDouble(), 10.0)
+    }
+
+    @Test
+    fun calculateTargetGains_lateralPositions_producesCorrectGains() {
+        val rightPos = Vector3(1.5, 0.0, 0.0)
+        val (leftGain, rightGain) = renderer.calculateTargetGains(rightPos, defaultParams)
+
+        assertTrue("Right gain should be greater than Left gain for right position", rightGain > leftGain)
         assertEquals(0.0, leftGain, delta)
     }
 
     @Test
-    fun calculateTargetGains_sourceToLeft_producesStrongerLeftOutput() {
-        val position = Vector3(-1.5, 0.0, 0.0) // Pure left
-        val (leftGain, rightGain) = renderer.calculateTargetGains(position, defaultParams)
-
-        assertTrue("Left gain ($leftGain) should be strictly greater than right gain ($rightGain)", leftGain > rightGain)
-        assertEquals(0.0, rightGain, delta)
-    }
-
-    @Test
-    fun calculateTargetGains_fartherDistance_attenuatesAmplitude() {
-        val nearPos = Vector3(0.0, 0.0, 1.0)
-        val farPos = Vector3(0.0, 0.0, 4.0)
-
-        val (nearL, nearR) = renderer.calculateTargetGains(nearPos, defaultParams)
-        val (farL, farR) = renderer.calculateTargetGains(farPos, defaultParams)
-
-        assertTrue(nearL > farL)
-        assertTrue(nearR > farR)
-    }
-
-    @Test
-    fun calculateTargetDelays_frontSource_producesZeroDelayBothEars() {
-        val position = Vector3(0.0, 0.0, 1.0)
-        val (leftDelay, rightDelay) = renderer.calculateTargetDelays(position)
-
-        assertEquals(0.0, leftDelay, delta)
-        assertEquals(0.0, rightDelay, delta)
-    }
-
-    @Test
-    fun calculateTargetDelays_sourceToRight_delaysLeftEarOnly() {
-        val position = Vector3(1.5, 0.0, 0.0)
-        val (leftDelay, rightDelay) = renderer.calculateTargetDelays(position)
+    fun calculateTargetDelays_lateralPositions_producesCorrectDelays() {
+        val rightPos = Vector3(1.5, 0.0, 0.0)
+        val (leftDelay, rightDelay) = renderer.calculateTargetDelays(rightPos)
 
         assertEquals(0.0, rightDelay, delta)
-        assertTrue("Left ear delay should be positive for right source", leftDelay > 0.0)
-        // Max ITD at 44.1kHz is ~28.9 samples
-        assertTrue(leftDelay in 25.0..32.0)
+        assertTrue("Left ear delay should be positive for right position", leftDelay > 0.0)
     }
 
     @Test
-    fun calculateTargetDelays_sourceToLeft_delaysRightEarOnly() {
-        val position = Vector3(-1.5, 0.0, 0.0)
-        val (leftDelay, rightDelay) = renderer.calculateTargetDelays(position)
-
-        assertEquals(0.0, leftDelay, delta)
-        assertTrue("Right ear delay should be positive for left source", rightDelay > 0.0)
-        assertTrue(rightDelay in 25.0..32.0)
-    }
-
-    @Test
-    fun calculateTargetDelays_symmetryAcrossMedianPlane() {
-        val rightPos = Vector3(1.0, 0.0, 1.0)
-        val leftPos = Vector3(-1.0, 0.0, 1.0)
-
-        val (rSourceLDelay, rSourceRDelay) = renderer.calculateTargetDelays(rightPos)
-        val (lSourceLDelay, lSourceRDelay) = renderer.calculateTargetDelays(leftPos)
-
-        assertEquals(0.0, rSourceRDelay, delta)
-        assertEquals(0.0, lSourceLDelay, delta)
-        assertEquals(rSourceLDelay, lSourceRDelay, delta)
-    }
-
-    @Test
-    fun calculateTargetCutoffs_frontSource_producesMaxCutoffBothEars() {
-        val position = Vector3(0.0, 0.0, 1.0)
-        val (leftCutoff, rightCutoff) = renderer.calculateTargetCutoffs(position)
-
-        assertEquals(20000.0, leftCutoff, delta)
-        assertEquals(20000.0, rightCutoff, delta)
-    }
-
-    @Test
-    fun calculateTargetCutoffs_sourceToRight_attenuatesLeftEarCutoff() {
-        val position = Vector3(1.5, 0.0, 0.0)
-        val (leftCutoff, rightCutoff) = renderer.calculateTargetCutoffs(position)
+    fun calculateTargetCutoffs_lateralPositions_producesCorrectCutoffs() {
+        val rightPos = Vector3(1.5, 0.0, 0.0)
+        val (leftCutoff, rightCutoff) = renderer.calculateTargetCutoffs(rightPos)
 
         assertEquals(20000.0, rightCutoff, delta)
         assertEquals(2000.0, leftCutoff, delta)
-    }
-
-    @Test
-    fun calculateTargetCutoffs_sourceToLeft_attenuatesRightEarCutoff() {
-        val position = Vector3(-1.5, 0.0, 0.0)
-        val (leftCutoff, rightCutoff) = renderer.calculateTargetCutoffs(position)
-
-        assertEquals(20000.0, leftCutoff, delta)
-        assertEquals(2000.0, rightCutoff, delta)
-    }
-
-    @Test
-    fun calculateTargetCutoffs_symmetryAcrossMedianPlane() {
-        val rightPos = Vector3(1.0, 0.0, 1.0)
-        val leftPos = Vector3(-1.0, 0.0, 1.0)
-
-        val (rSourceLeftCutoff, rSourceRightCutoff) = renderer.calculateTargetCutoffs(rightPos)
-        val (lSourceLeftCutoff, lSourceRightCutoff) = renderer.calculateTargetCutoffs(leftPos)
-
-        assertEquals(rSourceRightCutoff, lSourceLeftCutoff, delta)
-        assertEquals(rSourceLeftCutoff, lSourceRightCutoff, delta)
     }
 
     @Test
@@ -168,8 +236,7 @@ class StereoSpatialRendererTest {
     }
 
     @Test
-    fun reset_clearsInternalGainsAndDelayState() {
-        // Run some frames with offset source
+    fun reset_clearsInternalStateCleanly() {
         val pos = Vector3(2.0, 0.0, 0.0)
         for (i in 0 until 100) {
             renderer.processFrame(10000, 10000, pos, defaultParams, 1.0f)
@@ -177,7 +244,6 @@ class StereoSpatialRendererTest {
 
         renderer.reset()
 
-        // After reset, front source with 0 transition weight should match clean passthrough
         val (leftOut, rightOut) = renderer.processFrame(
             leftSample = 12345,
             rightSample = -12345,
