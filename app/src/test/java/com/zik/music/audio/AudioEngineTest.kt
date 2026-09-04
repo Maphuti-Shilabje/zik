@@ -23,8 +23,9 @@ class AudioEngineTest {
     @Test
     fun getAudioProcessors_returnsConfiguredProcessorsArray() {
         val processors = audioEngine.getAudioProcessors()
-        assertEquals(1, processors.size)
+        assertEquals(2, processors.size)
         assertNotNull(processors[0])
+        assertNotNull(processors[1])
     }
 
     @Test
