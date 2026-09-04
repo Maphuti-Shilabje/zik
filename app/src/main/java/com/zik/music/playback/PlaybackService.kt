@@ -1,6 +1,7 @@
 package com.zik.music.playback
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -8,10 +9,14 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.zik.music.MainActivity
+import com.zik.music.audio.AudioEngine
 import com.zik.music.model.Song
 import com.zik.music.widget.ZikMusicWidgetProvider
 
@@ -19,18 +24,35 @@ class PlaybackService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
     private lateinit var player: ExoPlayer
+    private var audioEngine: AudioEngine? = null
     private var audioEffectsManager: AudioEffectsManager? = null
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
 
+        val engine = AudioEngine().also { this.audioEngine = it }
+
+        val renderersFactory = object : DefaultRenderersFactory(this) {
+            override fun buildAudioSink(
+                context: Context,
+                enableFloatOutput: Boolean,
+                enableAudioTrackPlaybackParams: Boolean
+            ): AudioSink {
+                return DefaultAudioSink.Builder(context)
+                    .setAudioProcessors(engine.getAudioProcessors())
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                    .build()
+            }
+        }
+
         val audioAttributes = AudioAttributes.Builder()
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .setUsage(C.USAGE_MEDIA)
             .build()
 
-        player = ExoPlayer.Builder(this)
+        player = ExoPlayer.Builder(this, renderersFactory)
             .setAudioAttributes(audioAttributes, true) // Handles audio focus automatically
             .setHandleAudioBecomingNoisy(true) // Pauses automatically when headphones are unplugged
             .build()
@@ -144,6 +166,8 @@ class PlaybackService : MediaSessionService() {
     override fun onDestroy() {
         audioEffectsManager?.release()
         audioEffectsManager = null
+        audioEngine?.release()
+        audioEngine = null
         mediaSession?.run {
             player.release()
             release()
