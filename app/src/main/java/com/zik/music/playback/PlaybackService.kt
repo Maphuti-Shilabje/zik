@@ -75,10 +75,25 @@ class PlaybackService : MediaSessionService() {
                     audioEffectsManager?.attachAudioSession(sessionId)
                 }
                 updateWidget()
+
+                val diag = audioEngine?.getDiagnostics()
+                if (diag != null) {
+                    android.util.Log.d(
+                        "ZikAudioEngine",
+                        "StateChanged($playbackState): active=${diag.isProcessorActive}, buffers=${diag.processedBufferCount}, bytes=${diag.processedByteCount}"
+                    )
+                }
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 updateWidget()
+                val diag = audioEngine?.getDiagnostics()
+                if (diag != null) {
+                    android.util.Log.d(
+                        "ZikAudioEngine",
+                        "IsPlayingChanged($isPlaying): active=${diag.isProcessorActive}, buffers=${diag.processedBufferCount}, bytes=${diag.processedByteCount}"
+                    )
+                }
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -87,6 +102,13 @@ class PlaybackService : MediaSessionService() {
                     audioEffectsManager?.attachAudioSession(sessionId)
                 }
                 updateWidget()
+                val diag = audioEngine?.getDiagnostics()
+                if (diag != null) {
+                    android.util.Log.d(
+                        "ZikAudioEngine",
+                        "MediaItemTransition: title=${mediaItem?.mediaMetadata?.title}, buffers=${diag.processedBufferCount}, bytes=${diag.processedByteCount}"
+                    )
+                }
             }
         })
 

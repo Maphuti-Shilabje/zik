@@ -1,5 +1,6 @@
 package com.zik.music.audio.processors
 
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor.AudioFormat
@@ -32,10 +33,12 @@ class ZikPassthroughProcessor : BaseAudioProcessor() {
             encoding != C.ENCODING_PCM_32BIT
         ) {
             configuredInputFormat = AudioFormat.NOT_SET
+            Log.w("ZikAudioEngine", "Rejected unsupported audio format: $inputAudioFormat")
             throw UnhandledAudioFormatException(inputAudioFormat)
         }
 
         configuredInputFormat = inputAudioFormat
+        Log.d("ZikAudioEngine", "Configured PCM passthrough: rate=${inputAudioFormat.sampleRate}Hz, channels=${inputAudioFormat.channelCount}, encoding=${inputAudioFormat.encoding}")
         // Passthrough preserves input audio format unchanged
         return inputAudioFormat
     }
