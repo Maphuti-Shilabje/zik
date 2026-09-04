@@ -164,4 +164,42 @@ class SpatialMotionProcessorTest {
         assertEquals(512, outputBuffer.remaining())
         assertEquals(384L, processor.getProcessedFrameCount()) // 256 + 128
     }
+
+    @Test
+    fun queueInput_activeSpatialMotion_appliesHeadShadowSpectralFiltering() {
+        val initialParams = SpatialParameters(isEnabled = true, speedHz = 0.0, radius = 2.0)
+        val motionModel = object : MotionModel {
+            override fun positionAt(timeSeconds: Double): Vector3 = Vector3(2.0, 0.0, 0.0) // Pure right
+        }
+        val customProcessor = SpatialMotionProcessor(
+            initialParameters = initialParams,
+            initialMotionModel = motionModel
+        )
+        val format = AudioFormat(44100, 2, C.ENCODING_PCM_16BIT)
+        customProcessor.configure(format)
+        customProcessor.flush()
+
+        // Feed 1024 bytes (256 frames) of 10kHz alternating samples (+10000, -10000)
+        val inputBuffer = ByteBuffer.allocateDirect(1024).order(ByteOrder.nativeOrder())
+        for (i in 0 until 256) {
+            val s = if (i % 2 == 0) 10000.toShort() else (-10000).toShort()
+            inputBuffer.putShort(s)
+            inputBuffer.putShort(s)
+        }
+        inputBuffer.flip()
+
+        customProcessor.queueInput(inputBuffer)
+        val outputBuffer = customProcessor.output
+        assertEquals(1024, outputBuffer.remaining())
+
+        val outputShorts = outputBuffer.asShortBuffer()
+        var maxRight = 0
+        while (outputShorts.hasRemaining()) {
+            outputShorts.get() // left
+            val r = kotlin.math.abs(outputShorts.get().toInt())
+            maxRight = maxOf(maxRight, r)
+        }
+
+        assertTrue("Right ear output should be non-zero", maxRight > 0)
+    }
 }

@@ -2,6 +2,8 @@ package com.zik.music.audio.spatial
 
 import com.zik.music.audio.spatial.delay.FractionalDelayLine
 import com.zik.music.audio.spatial.delay.ItdModel
+import com.zik.music.audio.spatial.filter.HeadShadowFilter
+import com.zik.music.audio.spatial.filter.HeadShadowModel
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.exp
@@ -9,7 +11,8 @@ import kotlin.math.max
 import kotlin.math.sin
 
 class StereoSpatialRenderer(
-    val itdModel: ItdModel = ItdModel()
+    val itdModel: ItdModel = ItdModel(),
+    val headShadowModel: HeadShadowModel = HeadShadowModel()
 ) : SpatialRenderer {
 
     private var sampleRate: Int = 44100
@@ -26,6 +29,9 @@ class StereoSpatialRenderer(
     private val leftDelayLine = FractionalDelayLine(512)
     private val rightDelayLine = FractionalDelayLine(512)
 
+    private val leftShadowFilter = HeadShadowFilter()
+    private val rightShadowFilter = HeadShadowFilter()
+
     override fun configure(sampleRate: Int, channelCount: Int) {
         this.sampleRate = sampleRate
         this.channelCount = channelCount
@@ -35,6 +41,9 @@ class StereoSpatialRenderer(
         val delayTauSeconds = 0.025
         gainSmoothingCoeff = 1.0 - exp(-1.0 / (sampleRate * gainTauSeconds))
         delaySmoothingCoeff = 1.0 - exp(-1.0 / (sampleRate * delayTauSeconds))
+
+        leftShadowFilter.configure(sampleRate)
+        rightShadowFilter.configure(sampleRate)
 
         reset()
     }
@@ -46,6 +55,8 @@ class StereoSpatialRenderer(
         currentRightDelaySamples = 0.0
         leftDelayLine.reset()
         rightDelayLine.reset()
+        leftShadowFilter.reset()
+        rightShadowFilter.reset()
     }
 
     fun calculateTargetGains(position: Vector3, parameters: SpatialParameters): Pair<Double, Double> {
@@ -79,6 +90,10 @@ class StereoSpatialRenderer(
         return Pair(leftDelaySec * sampleRate, rightDelaySec * sampleRate)
     }
 
+    fun calculateTargetCutoffs(position: Vector3): Pair<Double, Double> {
+        return headShadowModel.calculateCutoffFrequencies(position)
+    }
+
     override fun processFrame(
         leftSample: Short,
         rightSample: Short,
@@ -88,6 +103,7 @@ class StereoSpatialRenderer(
     ): Pair<Short, Short> {
         val (targetLeftGain, targetRightGain) = calculateTargetGains(position, parameters)
         val (targetLeftDelay, targetRightDelay) = calculateTargetDelays(position)
+        val (targetLeftCutoff, targetRightCutoff) = calculateTargetCutoffs(position)
 
         // Real-time parameter smoothing to eliminate clicks and pitch-modulation artifacts
         currentLeftGain += gainSmoothingCoeff * (targetLeftGain - currentLeftGain)
@@ -99,19 +115,23 @@ class StereoSpatialRenderer(
         // Virtual mono point source derived from input stereo channels
         val sourceMono = (leftSample.toDouble() + rightSample.toDouble()) * 0.5
 
-        // Feed fractional delay lines
+        // 1. Feed fractional delay lines (ITD arrival time)
         leftDelayLine.write(sourceMono)
         rightDelayLine.write(sourceMono)
 
-        // Read fractional delayed samples for both ears
+        // 2. Read fractional delayed samples for both ears
         val delayedLeft = leftDelayLine.read(currentLeftDelaySamples)
         val delayedRight = rightDelayLine.read(currentRightDelaySamples)
 
-        // Apply ILD gains on delayed audio streams
-        val spatialLeft = delayedLeft * currentLeftGain
-        val spatialRight = delayedRight * currentRightGain
+        // 3. Apply frequency-dependent head-shadow filtering on delayed signals
+        val filteredLeft = leftShadowFilter.process(delayedLeft, targetLeftCutoff)
+        val filteredRight = rightShadowFilter.process(delayedRight, targetRightCutoff)
 
-        // Smooth transition blend: 0.0 = true passthrough, 1.0 = fully spatialized
+        // 4. Apply ILD gains on filtered/delayed audio streams
+        val spatialLeft = filteredLeft * currentLeftGain
+        val spatialRight = filteredRight * currentRightGain
+
+        // 5. Smooth transition blend: 0.0 = true passthrough, 1.0 = fully spatialized
         val weight = transitionWeight.toDouble().coerceIn(0.0, 1.0)
         val finalLeft = leftSample.toDouble() * (1.0 - weight) + spatialLeft * weight
         val finalRight = rightSample.toDouble() * (1.0 - weight) + spatialRight * weight

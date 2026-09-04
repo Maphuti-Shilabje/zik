@@ -108,6 +108,45 @@ class StereoSpatialRendererTest {
     }
 
     @Test
+    fun calculateTargetCutoffs_frontSource_producesMaxCutoffBothEars() {
+        val position = Vector3(0.0, 0.0, 1.0)
+        val (leftCutoff, rightCutoff) = renderer.calculateTargetCutoffs(position)
+
+        assertEquals(20000.0, leftCutoff, delta)
+        assertEquals(20000.0, rightCutoff, delta)
+    }
+
+    @Test
+    fun calculateTargetCutoffs_sourceToRight_attenuatesLeftEarCutoff() {
+        val position = Vector3(1.5, 0.0, 0.0)
+        val (leftCutoff, rightCutoff) = renderer.calculateTargetCutoffs(position)
+
+        assertEquals(20000.0, rightCutoff, delta)
+        assertEquals(2000.0, leftCutoff, delta)
+    }
+
+    @Test
+    fun calculateTargetCutoffs_sourceToLeft_attenuatesRightEarCutoff() {
+        val position = Vector3(-1.5, 0.0, 0.0)
+        val (leftCutoff, rightCutoff) = renderer.calculateTargetCutoffs(position)
+
+        assertEquals(20000.0, leftCutoff, delta)
+        assertEquals(2000.0, rightCutoff, delta)
+    }
+
+    @Test
+    fun calculateTargetCutoffs_symmetryAcrossMedianPlane() {
+        val rightPos = Vector3(1.0, 0.0, 1.0)
+        val leftPos = Vector3(-1.0, 0.0, 1.0)
+
+        val (rSourceLeftCutoff, rSourceRightCutoff) = renderer.calculateTargetCutoffs(rightPos)
+        val (lSourceLeftCutoff, lSourceRightCutoff) = renderer.calculateTargetCutoffs(leftPos)
+
+        assertEquals(rSourceRightCutoff, lSourceLeftCutoff, delta)
+        assertEquals(rSourceLeftCutoff, lSourceRightCutoff, delta)
+    }
+
+    @Test
     fun processFrame_finiteAndBoundedOutputWithoutNaN() {
         val testAngles = listOf(0.0, Math.PI / 4, Math.PI / 2, Math.PI, -Math.PI / 2)
 
