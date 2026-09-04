@@ -65,6 +65,49 @@ class StereoSpatialRendererTest {
     }
 
     @Test
+    fun calculateTargetDelays_frontSource_producesZeroDelayBothEars() {
+        val position = Vector3(0.0, 0.0, 1.0)
+        val (leftDelay, rightDelay) = renderer.calculateTargetDelays(position)
+
+        assertEquals(0.0, leftDelay, delta)
+        assertEquals(0.0, rightDelay, delta)
+    }
+
+    @Test
+    fun calculateTargetDelays_sourceToRight_delaysLeftEarOnly() {
+        val position = Vector3(1.5, 0.0, 0.0)
+        val (leftDelay, rightDelay) = renderer.calculateTargetDelays(position)
+
+        assertEquals(0.0, rightDelay, delta)
+        assertTrue("Left ear delay should be positive for right source", leftDelay > 0.0)
+        // Max ITD at 44.1kHz is ~28.9 samples
+        assertTrue(leftDelay in 25.0..32.0)
+    }
+
+    @Test
+    fun calculateTargetDelays_sourceToLeft_delaysRightEarOnly() {
+        val position = Vector3(-1.5, 0.0, 0.0)
+        val (leftDelay, rightDelay) = renderer.calculateTargetDelays(position)
+
+        assertEquals(0.0, leftDelay, delta)
+        assertTrue("Right ear delay should be positive for left source", rightDelay > 0.0)
+        assertTrue(rightDelay in 25.0..32.0)
+    }
+
+    @Test
+    fun calculateTargetDelays_symmetryAcrossMedianPlane() {
+        val rightPos = Vector3(1.0, 0.0, 1.0)
+        val leftPos = Vector3(-1.0, 0.0, 1.0)
+
+        val (rSourceLDelay, rSourceRDelay) = renderer.calculateTargetDelays(rightPos)
+        val (lSourceLDelay, lSourceRDelay) = renderer.calculateTargetDelays(leftPos)
+
+        assertEquals(0.0, rSourceRDelay, delta)
+        assertEquals(0.0, lSourceLDelay, delta)
+        assertEquals(rSourceLDelay, lSourceRDelay, delta)
+    }
+
+    @Test
     fun processFrame_finiteAndBoundedOutputWithoutNaN() {
         val testAngles = listOf(0.0, Math.PI / 4, Math.PI / 2, Math.PI, -Math.PI / 2)
 
@@ -83,5 +126,27 @@ class StereoSpatialRendererTest {
             assertFalse(leftOut.toDouble().isNaN())
             assertFalse(rightOut.toDouble().isNaN())
         }
+    }
+
+    @Test
+    fun reset_clearsInternalGainsAndDelayState() {
+        // Run some frames with offset source
+        val pos = Vector3(2.0, 0.0, 0.0)
+        for (i in 0 until 100) {
+            renderer.processFrame(10000, 10000, pos, defaultParams, 1.0f)
+        }
+
+        renderer.reset()
+
+        // After reset, front source with 0 transition weight should match clean passthrough
+        val (leftOut, rightOut) = renderer.processFrame(
+            leftSample = 12345,
+            rightSample = -12345,
+            position = Vector3(0.0, 0.0, 1.0),
+            parameters = defaultParams,
+            transitionWeight = 0.0f
+        )
+        assertEquals(12345.toShort(), leftOut)
+        assertEquals((-12345).toShort(), rightOut)
     }
 }

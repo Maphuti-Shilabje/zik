@@ -132,4 +132,36 @@ class SpatialMotionProcessorTest {
         assertFalse(processor.isActive)
         assertEquals(0L, processor.getProcessedFrameCount())
     }
+
+    @Test
+    fun onFlush_duringActiveSpatialization_resetsDelayLinesWithoutCrash() {
+        processor.parameters = SpatialParameters(isEnabled = true, speedHz = 0.5, radius = 2.0)
+        val format = AudioFormat(44100, 2, C.ENCODING_PCM_16BIT)
+        processor.configure(format)
+        processor.flush()
+
+        val buffer = ByteBuffer.allocateDirect(1024).order(ByteOrder.nativeOrder())
+        for (i in 0 until 256) {
+            buffer.putShort(10000.toShort())
+            buffer.putShort(10000.toShort())
+        }
+        buffer.flip()
+        processor.queueInput(buffer)
+
+        // Flush (e.g. on seek)
+        processor.flush()
+
+        // Queue new input after flush
+        val nextBuffer = ByteBuffer.allocateDirect(512).order(ByteOrder.nativeOrder())
+        for (i in 0 until 128) {
+            nextBuffer.putShort(5000.toShort())
+            nextBuffer.putShort(5000.toShort())
+        }
+        nextBuffer.flip()
+        processor.queueInput(nextBuffer)
+
+        val outputBuffer = processor.output
+        assertEquals(512, outputBuffer.remaining())
+        assertEquals(384L, processor.getProcessedFrameCount()) // 256 + 128
+    }
 }

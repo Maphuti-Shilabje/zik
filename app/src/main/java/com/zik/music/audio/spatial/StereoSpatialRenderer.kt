@@ -1,32 +1,51 @@
 package com.zik.music.audio.spatial
 
+import com.zik.music.audio.spatial.delay.FractionalDelayLine
+import com.zik.music.audio.spatial.delay.ItdModel
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.sin
 
-class StereoSpatialRenderer : SpatialRenderer {
+class StereoSpatialRenderer(
+    val itdModel: ItdModel = ItdModel()
+) : SpatialRenderer {
 
     private var sampleRate: Int = 44100
     private var channelCount: Int = 2
-    private var smoothingCoeff: Double = 0.005
+    private var gainSmoothingCoeff: Double = 0.005
+    private var delaySmoothingCoeff: Double = 0.005
 
     private var currentLeftGain: Double = 1.0
     private var currentRightGain: Double = 1.0
 
+    private var currentLeftDelaySamples: Double = 0.0
+    private var currentRightDelaySamples: Double = 0.0
+
+    private val leftDelayLine = FractionalDelayLine(512)
+    private val rightDelayLine = FractionalDelayLine(512)
+
     override fun configure(sampleRate: Int, channelCount: Int) {
         this.sampleRate = sampleRate
         this.channelCount = channelCount
-        // Exponential smoothing coefficient for ~20ms time constant tau
-        val tauSeconds = 0.020
-        smoothingCoeff = 1.0 - exp(-1.0 / (sampleRate * tauSeconds))
+
+        // Exponential smoothing coefficients (~20ms time constant for gain, ~25ms for ITD delay)
+        val gainTauSeconds = 0.020
+        val delayTauSeconds = 0.025
+        gainSmoothingCoeff = 1.0 - exp(-1.0 / (sampleRate * gainTauSeconds))
+        delaySmoothingCoeff = 1.0 - exp(-1.0 / (sampleRate * delayTauSeconds))
+
         reset()
     }
 
     override fun reset() {
         currentLeftGain = 1.0
         currentRightGain = 1.0
+        currentLeftDelaySamples = 0.0
+        currentRightDelaySamples = 0.0
+        leftDelayLine.reset()
+        rightDelayLine.reset()
     }
 
     fun calculateTargetGains(position: Vector3, parameters: SpatialParameters): Pair<Double, Double> {
@@ -55,6 +74,11 @@ class StereoSpatialRenderer : SpatialRenderer {
         return Pair(targetLeft, targetRight)
     }
 
+    fun calculateTargetDelays(position: Vector3): Pair<Double, Double> {
+        val (leftDelaySec, rightDelaySec) = itdModel.calculateEarDelaysSeconds(position)
+        return Pair(leftDelaySec * sampleRate, rightDelaySec * sampleRate)
+    }
+
     override fun processFrame(
         leftSample: Short,
         rightSample: Short,
@@ -62,17 +86,30 @@ class StereoSpatialRenderer : SpatialRenderer {
         parameters: SpatialParameters,
         transitionWeight: Float
     ): Pair<Short, Short> {
-        val (targetLeft, targetRight) = calculateTargetGains(position, parameters)
+        val (targetLeftGain, targetRightGain) = calculateTargetGains(position, parameters)
+        val (targetLeftDelay, targetRightDelay) = calculateTargetDelays(position)
 
-        // Real-time parameter smoothing to eliminate zipper noise and clicks
-        currentLeftGain += smoothingCoeff * (targetLeft - currentLeftGain)
-        currentRightGain += smoothingCoeff * (targetRight - currentRightGain)
+        // Real-time parameter smoothing to eliminate clicks and pitch-modulation artifacts
+        currentLeftGain += gainSmoothingCoeff * (targetLeftGain - currentLeftGain)
+        currentRightGain += gainSmoothingCoeff * (targetRightGain - currentRightGain)
+
+        currentLeftDelaySamples += delaySmoothingCoeff * (targetLeftDelay - currentLeftDelaySamples)
+        currentRightDelaySamples += delaySmoothingCoeff * (targetRightDelay - currentRightDelaySamples)
 
         // Virtual mono point source derived from input stereo channels
         val sourceMono = (leftSample.toDouble() + rightSample.toDouble()) * 0.5
 
-        val spatialLeft = sourceMono * currentLeftGain
-        val spatialRight = sourceMono * currentRightGain
+        // Feed fractional delay lines
+        leftDelayLine.write(sourceMono)
+        rightDelayLine.write(sourceMono)
+
+        // Read fractional delayed samples for both ears
+        val delayedLeft = leftDelayLine.read(currentLeftDelaySamples)
+        val delayedRight = rightDelayLine.read(currentRightDelaySamples)
+
+        // Apply ILD gains on delayed audio streams
+        val spatialLeft = delayedLeft * currentLeftGain
+        val spatialRight = delayedRight * currentRightGain
 
         // Smooth transition blend: 0.0 = true passthrough, 1.0 = fully spatialized
         val weight = transitionWeight.toDouble().coerceIn(0.0, 1.0)
