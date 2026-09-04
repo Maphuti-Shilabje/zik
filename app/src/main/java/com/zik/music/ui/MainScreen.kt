@@ -54,6 +54,7 @@ fun MainScreen(
     val uiState by viewModel.uiState.collectAsState()
     val playerState by viewModel.playerState.collectAsState()
     val eqState by viewModel.eqUiState.collectAsState()
+    val spatialState by viewModel.spatialUiState.collectAsState()
     val sleepTimerState by viewModel.sleepTimerState.collectAsState()
     val focusManager = LocalFocusManager.current
 
@@ -191,6 +192,8 @@ fun MainScreen(
                     onOpenSleepTimer = { viewModel.openSleepTimer() },
                     onInspectSong = { viewModel.inspectSong(it) },
                     isSleepTimerActive = sleepTimerState.isActive,
+                    isSpatialActive = spatialState.isEnabled,
+                    onToggleSpatial = { viewModel.toggleSpatialMotion(!spatialState.isEnabled) },
                     onCollapse = { viewModel.setPlayerExpanded(false) }
                 )
             }
@@ -215,6 +218,8 @@ fun MainScreen(
                     onRescanLibrary = { viewModel.loadLibrary() },
                     onOpenEqualizer = { viewModel.openEqualizer() },
                     onOpenSleepTimer = { viewModel.openSleepTimer() },
+                    isSpatialMotionEnabled = spatialState.isEnabled,
+                    onToggleSpatialMotion = { viewModel.toggleSpatialMotion(it) },
                     onBack = { viewModel.closeSettings() }
                 )
             }
@@ -233,6 +238,10 @@ fun MainScreen(
                     onVirtualizerChanged = { viewModel.setEqVirtualizer(it) },
                     onPresetSelected = { viewModel.setEqPreset(it) },
                     onResetToFlat = { viewModel.resetEqToFlat() },
+                    spatialState = spatialState,
+                    onToggleSpatial = { viewModel.toggleSpatialMotion(it) },
+                    onSpatialSpeedChanged = { viewModel.setSpatialSpeed(it) },
+                    onSpatialSpreadChanged = { viewModel.setSpatialSpread(it) },
                     onBack = { viewModel.closeEqualizer() }
                 )
             }

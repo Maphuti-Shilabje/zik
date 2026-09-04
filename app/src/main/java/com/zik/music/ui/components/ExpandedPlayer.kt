@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.SurroundSound
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -96,6 +97,8 @@ fun ExpandedPlayer(
     onOpenSleepTimer: () -> Unit = {},
     onInspectSong: (Song) -> Unit = {},
     isSleepTimerActive: Boolean = false,
+    isSpatialActive: Boolean = false,
+    onToggleSpatial: () -> Unit = {},
     onCollapse: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -341,7 +344,31 @@ fun ExpandedPlayer(
                                 .background(Color.White.copy(alpha = 0.15f))
                         )
 
-                        // 2. Equalizer Button
+                        // 2. Spatial Motion Button
+                        Surface(
+                            shape = CircleShape,
+                            color = if (isSpatialActive) AccentMutedBlue else Color.Transparent,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            IconButton(onClick = onToggleSpatial) {
+                                Icon(
+                                    imageVector = Icons.Default.SurroundSound,
+                                    contentDescription = "Spatial Motion",
+                                    tint = if (isSpatialActive) PureBlack else Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        // Divider
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(16.dp)
+                                .background(Color.White.copy(alpha = 0.15f))
+                        )
+
+                        // 3. Equalizer Button
                         Surface(
                             shape = CircleShape,
                             color = Color.Transparent,

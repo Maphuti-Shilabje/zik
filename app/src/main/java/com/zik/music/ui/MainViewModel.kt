@@ -71,9 +71,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val scanner = MediaStoreScanner(application)
     val musicController = MusicController(application)
     val audioEffectsManager = AudioEffectsManager.getInstance(application)
+    val spatialMotionManager = com.zik.music.audio.spatial.SpatialMotionManager.getInstance(application)
     val sleepTimerManager = SleepTimerManager(musicController)
 
     val eqUiState: StateFlow<EqualizerUiState> = audioEffectsManager.state
+    val spatialUiState: StateFlow<com.zik.music.audio.spatial.SpatialUiState> = spatialMotionManager.state
     val sleepTimerState: StateFlow<SleepTimerState> = sleepTimerManager.state
 
     private val _uiState = MutableStateFlow(
@@ -344,6 +346,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun resetEqToFlat() {
         audioEffectsManager.resetToFlat()
+    }
+
+    fun toggleSpatialMotion(enabled: Boolean) {
+        spatialMotionManager.setEnabled(enabled)
+    }
+
+    fun setSpatialSpeed(speedHz: Double) {
+        spatialMotionManager.setSpeedHz(speedHz)
+    }
+
+    fun setSpatialRadius(radius: Double) {
+        spatialMotionManager.setRadius(radius)
+    }
+
+    fun setSpatialSpread(degrees: Double) {
+        spatialMotionManager.setSpreadAngleDegrees(degrees)
     }
 
     fun openSleepTimer() {

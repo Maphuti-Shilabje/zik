@@ -62,6 +62,8 @@ fun SettingsScreen(
     onRescanLibrary: () -> Unit,
     onOpenEqualizer: () -> Unit = {},
     onOpenSleepTimer: () -> Unit = {},
+    isSpatialMotionEnabled: Boolean = false,
+    onToggleSpatialMotion: (Boolean) -> Unit = {},
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -195,6 +197,12 @@ fun SettingsScreen(
                         }
                     }
 
+                    SettingsToggleRow(
+                        title = "Spatial Motion",
+                        subtitle = "Dynamic 3D soundstage orbit with ITD and head-shadow cues",
+                        checked = isSpatialMotionEnabled,
+                        onCheckedChange = onToggleSpatialMotion
+                    )
                     SettingsToggleRow(
                         title = "Gapless Playback",
                         subtitle = "Seamless transitions between consecutive tracks",

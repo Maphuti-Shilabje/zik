@@ -70,6 +70,10 @@ fun EqualizerScreen(
     onVirtualizerChanged: (Int) -> Unit,
     onPresetSelected: (Int) -> Unit,
     onResetToFlat: () -> Unit,
+    spatialState: com.zik.music.audio.spatial.SpatialUiState = com.zik.music.audio.spatial.SpatialUiState(),
+    onToggleSpatial: (Boolean) -> Unit = {},
+    onSpatialSpeedChanged: (Double) -> Unit = {},
+    onSpatialSpreadChanged: (Double) -> Unit = {},
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -538,6 +542,118 @@ fun EqualizerScreen(
                             onValueChange = { onVirtualizerChanged(it.roundToInt()) },
                             valueRange = 0f..1000f,
                             enabled = eqState.isEnabled
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // 6. Spatial Motion (3D Soundstage Orbit) Glass Card
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "SPATIAL MOTION (3D SOUNDSTAGE)",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AccentMutedBlue
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Dynamic 3D orbit with ITD & head-shadow rendering",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.60f)
+                                )
+                            }
+
+                            Switch(
+                                checked = spatialState.isEnabled,
+                                onCheckedChange = onToggleSpatial,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = PureBlack,
+                                    checkedTrackColor = AccentMutedBlue,
+                                    uncheckedThumbColor = Color.White.copy(alpha = 0.5f),
+                                    uncheckedTrackColor = Color.White.copy(alpha = 0.15f)
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Orbit Speed Slider
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Orbit Speed",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
+                            )
+                            val periodSec = if (spatialState.speedHz > 0.0) 1.0 / spatialState.speedHz else 0.0
+                            val speedText = String.format(java.util.Locale.US, "%.2f Hz (%.1fs/rev)", spatialState.speedHz, periodSec)
+                            Text(
+                                text = speedText,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (spatialState.isEnabled) AccentMutedBlue else Color.White.copy(alpha = 0.4f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        GlassHorizontalSlider(
+                            value = spatialState.speedHz.toFloat(),
+                            onValueChange = { onSpatialSpeedChanged(it.toDouble()) },
+                            valueRange = 0.02f..0.50f,
+                            enabled = spatialState.isEnabled
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Soundstage Spread Slider
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Soundstage Width",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "${spatialState.spreadAngleDegrees.roundToInt()}°",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (spatialState.isEnabled) AccentMutedBlue else Color.White.copy(alpha = 0.4f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        GlassHorizontalSlider(
+                            value = spatialState.spreadAngleDegrees.toFloat(),
+                            onValueChange = { onSpatialSpreadChanged(it.toDouble()) },
+                            valueRange = 15f..90f,
+                            enabled = spatialState.isEnabled
                         )
                     }
                 }

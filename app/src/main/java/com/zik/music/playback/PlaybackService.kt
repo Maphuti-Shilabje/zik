@@ -32,6 +32,8 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
 
         val engine = AudioEngine().also { this.audioEngine = it }
+        com.zik.music.audio.spatial.SpatialMotionManager.getInstance(applicationContext)
+            .attachProcessor(engine.spatialMotionProcessor)
 
         val renderersFactory = object : DefaultRenderersFactory(this) {
             override fun buildAudioSink(
@@ -186,6 +188,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        com.zik.music.audio.spatial.SpatialMotionManager.getInstance(applicationContext).detachProcessor()
         audioEffectsManager?.release()
         audioEffectsManager = null
         audioEngine?.release()
