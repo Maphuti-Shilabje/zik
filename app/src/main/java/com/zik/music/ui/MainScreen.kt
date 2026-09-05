@@ -240,6 +240,8 @@ fun MainScreen(
                     onResetToFlat = { viewModel.resetEqToFlat() },
                     spatialState = spatialState,
                     onToggleSpatial = { viewModel.toggleSpatialMotion(it) },
+                    onSpatialPresetSelected = { viewModel.selectSpatialPreset(it) },
+                    onSpatialIntensityChanged = { viewModel.setSpatialIntensity(it) },
                     onSpatialSpeedChanged = { viewModel.setSpatialSpeed(it) },
                     onSpatialSpreadChanged = { viewModel.setSpatialSpread(it) },
                     onBack = { viewModel.closeEqualizer() }

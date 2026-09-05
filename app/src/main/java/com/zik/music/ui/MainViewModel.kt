@@ -352,6 +352,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         spatialMotionManager.setEnabled(enabled)
     }
 
+    fun selectSpatialPreset(preset: com.zik.music.audio.spatial.SpatialPreset) {
+        spatialMotionManager.selectPreset(preset)
+    }
+
+    fun setSpatialIntensity(intensity: Double) {
+        spatialMotionManager.setIntensity(intensity)
+    }
+
     fun setSpatialSpeed(speedHz: Double) {
         spatialMotionManager.setSpeedHz(speedHz)
     }

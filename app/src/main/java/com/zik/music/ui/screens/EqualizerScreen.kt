@@ -22,11 +22,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import com.zik.music.audio.spatial.SpatialPreset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Equalizer
@@ -72,6 +74,8 @@ fun EqualizerScreen(
     onResetToFlat: () -> Unit,
     spatialState: com.zik.music.audio.spatial.SpatialUiState = com.zik.music.audio.spatial.SpatialUiState(),
     onToggleSpatial: (Boolean) -> Unit = {},
+    onSpatialPresetSelected: (com.zik.music.audio.spatial.SpatialPreset) -> Unit = {},
+    onSpatialIntensityChanged: (Double) -> Unit = {},
     onSpatialSpeedChanged: (Double) -> Unit = {},
     onSpatialSpreadChanged: (Double) -> Unit = {},
     onBack: () -> Unit,
@@ -591,6 +595,78 @@ fun EqualizerScreen(
                                 )
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Preset Selector Pills: [ Subtle | Balanced | Wide | Immersive | Custom ]
+                        Text(
+                            text = "Soundstage Preset",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(SpatialPreset.entries) { preset ->
+                                val isSelected = spatialState.preset == preset
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = if (isSelected && spatialState.isEnabled) AccentMutedBlue else Color.Transparent,
+                                    border = BorderStroke(
+                                        1.dp,
+                                        if (isSelected && spatialState.isEnabled) AccentMutedBlue else Color.White.copy(alpha = 0.16f)
+                                    ),
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .clickable(enabled = spatialState.isEnabled) {
+                                            onSpatialPresetSelected(preset)
+                                        }
+                                ) {
+                                    Text(
+                                        text = preset.displayName,
+                                        fontSize = 12.5.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected && spatialState.isEnabled) PureBlack else Color.White.copy(alpha = if (spatialState.isEnabled) 0.9f else 0.4f),
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Perceptual Intensity Slider (0% to 100%)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Spatial Intensity",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "${(spatialState.intensity * 100).roundToInt()}%",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (spatialState.isEnabled) AccentMutedBlue else Color.White.copy(alpha = 0.4f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        GlassHorizontalSlider(
+                            value = spatialState.intensity.toFloat(),
+                            onValueChange = { onSpatialIntensityChanged(it.toDouble()) },
+                            valueRange = 0f..1f,
+                            enabled = spatialState.isEnabled
+                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
